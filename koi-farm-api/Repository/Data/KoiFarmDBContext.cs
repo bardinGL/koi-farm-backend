@@ -45,12 +45,10 @@ namespace Repository.Data
             if (!optionsBuilder.IsConfigured)
             {
                 optionsBuilder.UseSqlServer(
-                    GetConnectionString(),
+"Server=sql-server,1433;Database=KoiFarm;uid=sa;Password=Koifarm123@;TrustServerCertificate=True;Encrypt=False",
                     b => b.MigrationsAssembly("Repository")); // "Repository" is the name of the class library project
             }
         }
-
-
 
         private string GetConnectionString()
         {

@@ -393,6 +393,56 @@ namespace koi_farm_api.Controllers
             });
         }
 
+        [HttpPut("cancel-order/{orderId}")]
+        public IActionResult CancelOrder(string orderId)
+        {
+            var order = _unitOfWork.OrderRepository.GetSingle(o => o.Id == orderId, o => o.Items);
+            if (order == null)
+            {
+                return NotFound(new ResponseModel
+                {
+                    StatusCode = 404,
+                    MessageError = "Order not found."
+                });
+            }
+
+            if (order.Status != "Pending")
+            {
+                return BadRequest(new ResponseModel
+                {
+                    StatusCode = 400,
+                    MessageError = "Can't be canceled."
+                });
+            }
+
+            foreach (var orderItem in order.Items)
+            {
+                var productItem = _unitOfWork.ProductItemRepository.GetById(orderItem.ProductItemId);
+                if (productItem != null)
+                {
+                    productItem.Quantity += orderItem.Quantity;
+                    _unitOfWork.ProductItemRepository.Update(productItem);
+
+                    var product = _unitOfWork.ProductRepository.GetById(productItem.ProductId);
+                    if (product != null)
+                    {
+                        product.Quantity += orderItem.Quantity;
+                        _unitOfWork.ProductRepository.Update(product);
+                    }
+                }
+            }
+
+
+            order.Status = "Cancelled";
+            _unitOfWork.OrderRepository.Update(order);
+
+            return Ok(new ResponseModel
+            {
+                StatusCode = 200,
+                MessageError = "Order successfully canceled. Quantities have been updated accordingly."
+            });
+        }
+
         [HttpPut("order/assign-staff/{orderId}")]
         public IActionResult AssignStaffToOrder(string orderId, [FromBody] RequestAssginStaffModel model)
         {
