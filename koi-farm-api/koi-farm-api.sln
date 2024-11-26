@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34728.123
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "koi-farm-api", "koi-farm-api\koi-farm-api.csproj", "{F93136D5-0AF3-44AC-B8F4-480FD6A4F873}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Repository", "Repository\Repository.csproj", "{F6681BFD-12EA-4A8B-96E2-A162F232E2DE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F93136D5-0AF3-44AC-B8F4-480FD6A4F873}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F93136D5-0AF3-44AC-B8F4-480FD6A4F873}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F93136D5-0AF3-44AC-B8F4-480FD6A4F873}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F93136D5-0AF3-44AC-B8F4-480FD6A4F873}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F6681BFD-12EA-4A8B-96E2-A162F232E2DE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F6681BFD-12EA-4A8B-96E2-A162F232E2DE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F6681BFD-12EA-4A8B-96E2-A162F232E2DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F6681BFD-12EA-4A8B-96E2-A162F232E2DE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2850086B-5331-44BB-A086-8671AA737BEF}
+	EndGlobalSection
+EndGlobal
