@@ -167,6 +167,119 @@ namespace koi_farm_api.Controllers
                 Data = user
             });
         }
+        [HttpPut("update-my-user")]
+        [Authorize]
+        public IActionResult UpdateMyUser([FromBody] RequestCreateUserModel updateUserModel)
+        {
+            if (updateUserModel == null)
+            {
+                return BadRequest(new ResponseModel
+                {
+                    StatusCode = 400,
+                    MessageError = "User data cannot be null or empty."
+                });
+            }
+
+            var userId = User.FindFirst("UserID")?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new ResponseModel
+                {
+                    StatusCode = 401,
+                    MessageError = "Unauthorized: UserId not found."
+                });
+            }
+
+            var user = _unitOfWork.UserRepository.GetById(userId);
+
+            if (user == null)
+            {
+                return NotFound(new ResponseModel
+                {
+                    StatusCode = 404,
+                    MessageError = $"User with Id: {userId} not found."
+                });
+            }
+
+            _mapper.Map(updateUserModel, user);
+
+            _unitOfWork.UserRepository.Update(user);
+
+            return Ok(new ResponseModel
+            {
+                StatusCode = 200,
+                Data = user
+            });
+        }
+
+
+        [Authorize(Roles = "Manager")]
+        [HttpDelete("delete-user/{id}")]
+        public IActionResult DeleteUser(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return BadRequest(new ResponseModel
+                {
+                    StatusCode = 400,
+                    MessageError = "UserId cannot be null or empty."
+                });
+            }
+
+            var user = _unitOfWork.UserRepository.GetById(id);
+
+            if (user == null)
+            {
+                return NotFound(new ResponseModel
+                {
+                    StatusCode = 404,
+                    MessageError = $"User with Id: {id} not found."
+                });
+            }
+
+            _unitOfWork.UserRepository.Delete(user);
+
+            return Ok(new ResponseModel
+            {
+                StatusCode = 200,
+                Data = $"User with ID {id} successfully deleted."
+            });
+        }
+        [HttpGet("get-my-user")]
+        [Authorize]
+        public IActionResult GetMyUser()
+        {
+            var userId = User.FindFirst("UserID")?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new ResponseModel
+                {
+                    StatusCode = 401,
+                    MessageError = "Unauthorized: UserId not found in claims."
+                });
+            }
+
+            var user = _unitOfWork.UserRepository.GetById(userId);
+
+            if (user == null)
+            {
+                return NotFound(new ResponseModel
+                {
+                    StatusCode = 404,
+                    MessageError = $"User with Id: {userId} not found."
+                });
+            }
+
+            var responseUser = _mapper.Map<ResponseUserModel>(user);
+
+            return Ok(new ResponseModel
+            {
+                StatusCode = 200,
+                Data = responseUser
+            });
+        }
 
     }
 }
