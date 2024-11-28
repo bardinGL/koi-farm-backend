@@ -280,6 +280,69 @@ namespace koi_farm_api.Controllers
                 Data = responseUser
             });
         }
+        [HttpPost("request-password-reset")]
+        public IActionResult RequestPasswordReset([FromBody] RequestPasswordResetModel model)
+        {
+            var user = _unitOfWork.UserRepository.GetAll().FirstOrDefault(x => x.Email == model.Email);
+
+            if (user == null)
+            {
+                return NotFound(new ResponseModel
+                {
+                    StatusCode = 404,
+                    MessageError = "User not found!"
+                });
+            }
+
+            var token = _tokenService.GenerateToken(model.Email);
+            var frontendUrl = _configuration["FrontEndPort:PaymentUrl"];
+
+            // Send reset email
+            var resetUrl = $"{frontendUrl}/reset-password?token={token}&email={model.Email}";
+            _emailService.SendMail(new SendMailModel
+            {
+                ReceiveAddress = model.Email,
+                Title = "Password Reset Request",
+                Content = $"Click the link to reset your password: {resetUrl}"
+            });
+
+            return Ok(new ResponseModel
+            {
+                StatusCode = 200,
+                MessageError = "Successfully request password reset"
+            });
+        }
+        [HttpPost("reset-password")]
+        public IActionResult ResetPassword([FromBody] ResetPasswordModel model)
+        {
+            if (!_tokenService.ValidateToken(model.Email, model.Token)) return BadRequest("Invalid or expired token");
+
+            if (string.IsNullOrEmpty(model.Email))
+            {
+                return BadRequest(new ResponseModel { StatusCode = 400, MessageError = "Email is required!" });
+            }
+
+            var user = _unitOfWork.UserRepository.GetAll().FirstOrDefault(x => x.Email == model.Email);
+
+            if (user == null)
+            {
+                return NotFound(new ResponseModel
+                {
+                    StatusCode = 404,
+                    MessageError = "User not found!"
+                });
+            }
+
+            user.Password = model.NewPassword;
+            _unitOfWork.UserRepository.Update(user);
+            _tokenService.RemoveToken(model.Email);
+
+            return Ok(new ResponseModel
+            {
+                StatusCode = 200,
+                MessageError = "New password updated successfully"
+            });
+        }
 
     }
 }
