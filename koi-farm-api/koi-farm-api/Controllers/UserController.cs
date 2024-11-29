@@ -13,6 +13,7 @@ using Repository.Repository;
 using System.Security.Cryptography;
 using System.Text;
 
+
 namespace koi_farm_api.Controllers
 {
     [ApiController]
@@ -58,7 +59,6 @@ namespace koi_farm_api.Controllers
                 Data = responseUsers
             });
         }
-
         [HttpGet("get-users-by-role/{role}")]
         //[Authorize]
         public IActionResult GetUsersByRole(string role, int pageIndex = 1, int pageSize = 10)
@@ -106,40 +106,6 @@ namespace koi_farm_api.Controllers
             {
                 StatusCode = 200,
                 Data = responseSearchModel
-            });
-        }
-
-        [HttpGet("get-user/{id}")]
-        public IActionResult GetUser(string id)
-        {
-            if (string.IsNullOrEmpty(id))
-            {
-                return BadRequest(new ResponseModel
-                {
-                    StatusCode = 400,
-                    MessageError = "UserId cannot be null or empty."
-                });
-            }
-
-            var user = _unitOfWork.UserRepository.GetById(id);
-
-            if (user == null)
-            {
-                return NotFound(new ResponseModel
-                {
-                    StatusCode = 404,
-                    MessageError = $"User with ID: {id} not found."
-                });
-            }
-
-            //user.Role = _unitOfWork.RoleRepository.GetAll().FirstOrDefault(r => r.Id.Equals(user.RoleId));
-
-            var responseUser = _mapper.Map<ResponseUserModel>(user);
-
-            return Ok(new ResponseModel
-            {
-                StatusCode = 200,
-                Data = responseUser
             });
         }
 
@@ -293,7 +259,6 @@ namespace koi_farm_api.Controllers
                 Data = $"User with ID {id} successfully deleted."
             });
         }
-
         [HttpGet("get-my-user")]
         [Authorize]
         public IActionResult GetMyUser()
@@ -328,7 +293,6 @@ namespace koi_farm_api.Controllers
                 Data = responseUser
             });
         }
-
         [HttpPost("request-password-reset")]
         public IActionResult RequestPasswordReset([FromBody] RequestPasswordResetModel model)
         {
@@ -361,7 +325,6 @@ namespace koi_farm_api.Controllers
                 MessageError = "Successfully request password reset"
             });
         }
-
 
         [HttpPost("reset-password")]
         public IActionResult ResetPassword([FromBody] ResetPasswordModel model)
