@@ -1,5 +1,9 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Repository.Helper;
+using Repository.Model;
+using Repository.Model.Auth;
+using Repository.Model.User;
 using Repository.Repository;
 
 namespace koi_farm_api.Controllers

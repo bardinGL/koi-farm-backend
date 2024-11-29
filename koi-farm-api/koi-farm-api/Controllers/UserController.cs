@@ -1,13 +1,23 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Repository.Data.Entity;
+using Repository.EmailService;
+using Repository.ForgotPasswordService;
+using Repository.Model;
+using Repository.Model.Email;
+using Repository.Model.ForgotPassword;
+using Repository.Model.ProductItem;
+using Repository.Model.User;
 using Repository.Repository;
+using System.Security.Cryptography;
+using System.Text;
+
 
 namespace koi_farm_api.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/[controller]")]
     public class UserController : ControllerBase
     {
         private readonly UnitOfWork _unitOfWork;
@@ -98,6 +108,7 @@ namespace koi_farm_api.Controllers
                 Data = responseSearchModel
             });
         }
+
         [Authorize(Roles = "Manager")]
         [HttpPost("create-user-staff")]
         public IActionResult CreateUserStaff([FromBody] RequestCreateUserModel responseCreateUser)
@@ -133,6 +144,7 @@ namespace koi_farm_api.Controllers
                 Data = user
             });
         }
+
         [Authorize(Roles = "Manager")]
         [HttpPut("update-user/{id}")]
         public IActionResult UpdateUser(string id, [FromBody] RequestCreateUserModel updateUserModel)
@@ -167,6 +179,7 @@ namespace koi_farm_api.Controllers
                 Data = user
             });
         }
+
         [HttpPut("update-my-user")]
         [Authorize]
         public IActionResult UpdateMyUser([FromBody] RequestCreateUserModel updateUserModel)
@@ -312,6 +325,7 @@ namespace koi_farm_api.Controllers
                 MessageError = "Successfully request password reset"
             });
         }
+
         [HttpPost("reset-password")]
         public IActionResult ResetPassword([FromBody] ResetPasswordModel model)
         {
