@@ -108,5 +108,95 @@ namespace koi_farm_api.Controllers
                 Data = blog
             });
         }
+        [Authorize(Roles = "Manager,Staff")]
+        [HttpPut("update-blog/{id}")]
+        public IActionResult UpdateBlog(string id, [FromBody] RequestCreateBlogModel blogModel)
+        {
+            if (string.IsNullOrEmpty(id) || blogModel == null || string.IsNullOrEmpty(blogModel.Title))
+            {
+                return BadRequest(new ResponseModel
+                {
+                    StatusCode = 400,
+                    MessageError = "Invalid blog data. ID and Title are required."
+                });
+            }
+
+            var blog = _unitOfWork.BlogRepository.GetById(id);
+            if (blog == null)
+            {
+                return NotFound(new ResponseModel
+                {
+                    StatusCode = 404,
+                    MessageError = "Blog not found."
+                });
+            }
+
+            var userId = GetUserIdFromClaims();
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new ResponseModel
+                {
+                    StatusCode = 401,
+                    MessageError = "Unauthorized: UserId not found."
+                });
+            }
+
+            // Only allow the user who created the blog and manager to update it
+            if (blog.UserId != userId && _unitOfWork.UserRepository.GetById(userId).RoleId != "1")
+            {
+                return Forbid();
+            }
+
+            _mapper.Map(blogModel, blog);
+
+            _unitOfWork.BlogRepository.Update(blog);
+
+            return Ok(new ResponseModel
+            {
+                StatusCode = 200,
+                Data = blog
+            });
+        }
+
+        [Authorize(Roles = "Manager,Staff")]
+        [HttpDelete("delete-blog/{id}")]
+        public IActionResult DeleteBlog(string id)
+        {
+            var blog = _unitOfWork.BlogRepository.GetById(id);
+            if (blog == null)
+            {
+                return NotFound(new ResponseModel
+                {
+                    StatusCode = 404,
+                    MessageError = "Blog not found."
+                });
+            }
+
+            var userId = GetUserIdFromClaims();
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new ResponseModel
+                {
+                    StatusCode = 401,
+                    MessageError = "Unauthorized: UserId not found."
+                });
+            }
+
+            // Only allow the user who created the blog to delete it
+            if (blog.UserId != userId)
+            {
+                return Forbid();
+            }
+
+            _unitOfWork.BlogRepository.Delete(blog);
+
+            return Ok(new ResponseModel
+            {
+                StatusCode = 200,
+                MessageError = "Blog deleted successfully."
+            });
+        }
     }
 }
