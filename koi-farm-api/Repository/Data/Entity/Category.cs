@@ -7,7 +7,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Repository.Data.Entity
 {
     [Table("Product")]
-    public class Product : Entity    
+    public class Category : Entity    
     {
         [Required]
         [MaxLength(100)]

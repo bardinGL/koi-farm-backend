@@ -28,7 +28,7 @@ namespace koi_farm_api.Controllers
         public IActionResult GetAllProductItems(int pageIndex = 1, int pageSize = 10, string? searchQuery = null)
         {
             var productItems = _unitOfWork.ProductItemRepository
-                .Get(c => !c.IsDeleted && !c.Name.StartsWith("[Consignment]-") && c.BatchId == null)
+                .Get(c => !c.IsDeleted && !c.Type.StartsWith("Shop") && c.BatchId == null)
                 .OrderByDescending(c => c.CreatedTime)
                 .ToList();
 
@@ -79,7 +79,7 @@ namespace koi_farm_api.Controllers
         public IActionResult GetAllBatchProductItems()
         {
             var productItems = _unitOfWork.ProductItemRepository
-                .Get(c => !c.IsDeleted && !c.Name.StartsWith("[Consignment]-") && c.BatchId != null)
+                .Get(c => !c.IsDeleted && !c.Name.StartsWith("Shop") && c.BatchId != null)
                 .ToList();
 
             if (!productItems.Any())
@@ -114,7 +114,7 @@ namespace koi_farm_api.Controllers
 
             var productItem = _unitOfWork.ProductItemRepository.Get(c => c.Id == id && c.BatchId == null).FirstOrDefault();
 
-            if (productItem == null || productItem.Name.StartsWith("[Consignment]-"))
+            if (productItem == null || productItem.Name.StartsWith("Shop"))
             {
                 return NotFound(new ResponseModel
                 {
@@ -146,7 +146,7 @@ namespace koi_farm_api.Controllers
 
             var productItem = _unitOfWork.ProductItemRepository.Get(c => c.Id == id && c.BatchId != null).FirstOrDefault();
 
-            if (productItem == null || productItem.Name.StartsWith("[Consignment]-"))
+            if (productItem == null || productItem.Name.StartsWith("Shop"))
             {
                 return NotFound(new ResponseModel
                 {
@@ -179,7 +179,7 @@ namespace koi_farm_api.Controllers
             }
 
             var productItems = _unitOfWork.ProductItemRepository
-                .Get(r => r.ProductId == productId && !r.Name.StartsWith("[Consignment]-") && r.BatchId == null)
+                .Get(r => r.ProductId == productId && !r.Name.StartsWith("Shop") && r.BatchId == null)
                 .ToList();
 
             if (!productItems.Any())
@@ -214,7 +214,7 @@ namespace koi_farm_api.Controllers
             }
 
             var productItems = _unitOfWork.ProductItemRepository
-                .Get(r => r.BatchId == batchId && !r.Name.StartsWith("[Consignment]-"))
+                .Get(r => r.BatchId == batchId && !r.Name.StartsWith("Shop"))
                 .ToList();
 
             if (!productItems.Any())

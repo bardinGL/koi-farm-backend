@@ -32,7 +32,7 @@ namespace Repository.Data
         public DbSet<Order> OrderEntities { get; set; }
         public DbSet<OrderItem> OrderItemEntities { get; set; }
         public DbSet<Payment> PaymentEntities { get; set; }
-        public DbSet<Product> ProductEntities { get; set; }
+        public DbSet<Category> ProductEntities { get; set; }
         public DbSet<ProductCertificate> ProductCertificateEntities { get; set; }
         public DbSet<ProductItem> ProductItemEntities { get; set; }
         public DbSet<Promotion> PromotionEntities { get; set; }

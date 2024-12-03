@@ -9,6 +9,7 @@ FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["koi-farm-api/koi-farm-api.csproj", "koi-farm-api/"]
+COPY ["Repository/Repository.csproj", "Repository/"]
 RUN dotnet restore "./koi-farm-api/koi-farm-api.csproj"
 COPY . .
 WORKDIR "/src/koi-farm-api"

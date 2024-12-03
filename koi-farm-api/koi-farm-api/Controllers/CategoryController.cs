@@ -12,22 +12,22 @@ namespace koi_farm_api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ProductController : ControllerBase
+    public class CategoryController : ControllerBase
     {
         private readonly UnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
-        public ProductController(UnitOfWork unitOfWork, IMapper mapper)
+        public CategoryController(UnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
         }
 
-        [HttpGet("get-all-products")]
+        [HttpGet("get-all-shop-products")]
         public IActionResult GetAllProducts()
         {
-            var products = _unitOfWork.ProductRepository
-                .Get(c => !c.IsDeleted && !c.Name.StartsWith("[Consignment]-"))
+            var products = _unitOfWork.CategoryRepository
+                .Get(c => !c.IsDeleted)
                 .ToList();
 
             if (!products.Any())
@@ -39,7 +39,7 @@ namespace koi_farm_api.Controllers
                 });
             }
 
-            var responseProducts = _mapper.Map<List<ResponseProductModel>>(products);
+            var responseProducts = _mapper.Map<List<ResponseCategoryModel>>(products);
 
             return Ok(new ResponseModel
             {
@@ -60,9 +60,9 @@ namespace koi_farm_api.Controllers
                 });
             }
 
-            var product = _unitOfWork.ProductRepository.GetById(id);
+            var product = _unitOfWork.CategoryRepository.GetById(id);
 
-            if (product == null || product.Name.StartsWith("[Consignment]-"))
+            if (product == null)
             {
                 return NotFound(new ResponseModel
                 {
@@ -71,7 +71,7 @@ namespace koi_farm_api.Controllers
                 });
             }
 
-            var responseProduct = _mapper.Map<ResponseProductModel>(product);
+            var responseProduct = _mapper.Map<ResponseCategoryModel>(product);
 
             return Ok(new ResponseModel
             {
@@ -83,7 +83,7 @@ namespace koi_farm_api.Controllers
 
         [Authorize(Roles = "Manager,Staff")]
         [HttpPost("create-product")]
-        public IActionResult CreateProduct(RequestCreateProductModel productModel)
+        public IActionResult CreateProduct(RequestCreateCategoryModel productModel)
         {
             if (productModel == null || string.IsNullOrEmpty(productModel.Name))
             {
@@ -94,7 +94,7 @@ namespace koi_farm_api.Controllers
                 });
             }
 
-            var existingProduct = _unitOfWork.ProductRepository.GetSingle(p => p.Name.ToLower() == productModel.Name.ToLower());
+            var existingProduct = _unitOfWork.CategoryRepository.GetSingle(p => p.Name.ToLower() == productModel.Name.ToLower());
             if (existingProduct != null)
             {
                 return Conflict(new ResponseModel
@@ -104,9 +104,9 @@ namespace koi_farm_api.Controllers
                 });
             }
 
-            var product = _mapper.Map<Product>(productModel);
+            var product = _mapper.Map<Category>(productModel);
 
-            _unitOfWork.ProductRepository.Create(product);
+            _unitOfWork.CategoryRepository.Create(product);
 
             return Ok(new ResponseModel
             {
@@ -117,7 +117,7 @@ namespace koi_farm_api.Controllers
 
         [Authorize(Roles = "Manager,Staff")]
         [HttpPut("update-product/{id}")]
-        public IActionResult UpdateProduct(string id, [FromBody] RequestCreateProductModel productModel)
+        public IActionResult UpdateProduct(string id, [FromBody] RequestCreateCategoryModel productModel)
         {
             if (string.IsNullOrEmpty(id) || productModel == null)
             {
@@ -128,7 +128,7 @@ namespace koi_farm_api.Controllers
                 });
             }
 
-            var product = _unitOfWork.ProductRepository.GetById(id);
+            var product = _unitOfWork.CategoryRepository.GetById(id);
             if (product == null)
             {
                 return NotFound(new ResponseModel
@@ -138,7 +138,7 @@ namespace koi_farm_api.Controllers
                 });
             }
 
-            var existingProduct = _unitOfWork.ProductRepository.GetSingle(p => p.Name.ToLower() == productModel.Name.ToLower() && p.Id != id);
+            var existingProduct = _unitOfWork.CategoryRepository.GetSingle(p => p.Name.ToLower() == productModel.Name.ToLower() && p.Id != id);
             if (existingProduct != null)
             {
                 return Conflict(new ResponseModel
@@ -150,7 +150,7 @@ namespace koi_farm_api.Controllers
 
             _mapper.Map(productModel, product);
 
-            _unitOfWork.ProductRepository.Update(product);
+            _unitOfWork.CategoryRepository.Update(product);
 
             return Ok(new ResponseModel
             {
@@ -172,7 +172,7 @@ namespace koi_farm_api.Controllers
                 });
             }
 
-            var product = _unitOfWork.ProductRepository.GetById(id);
+            var product = _unitOfWork.CategoryRepository.GetById(id);
 
             if (product == null)
             {
@@ -183,7 +183,7 @@ namespace koi_farm_api.Controllers
                 });
             }
 
-            _unitOfWork.ProductRepository.Delete(product);
+            _unitOfWork.CategoryRepository.Delete(product);
 
             return Ok(new ResponseModel
             {
