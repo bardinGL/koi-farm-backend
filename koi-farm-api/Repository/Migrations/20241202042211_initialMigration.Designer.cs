@@ -12,7 +12,7 @@ using Repository.Data;
 namespace Repository.Migrations
 {
     [DbContext(typeof(KoiFarmDbContext))]
-    [Migration("20241118044631_initialMigration")]
+    [Migration("20241202042211_initialMigration")]
     partial class initialMigration
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
