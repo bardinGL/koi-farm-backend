@@ -25,8 +25,8 @@ namespace Repository.Helper.AutoMapper
 
             CreateMap<User, RequestCreateUserModel>().ReverseMap();
 
-            CreateMap<Category, RequestCreateProductModel>().ReverseMap();
-            CreateMap<Category, ResponseProductModel>().ReverseMap();
+            CreateMap<Category, RequestCreateCategoryModel>().ReverseMap();
+            CreateMap<Category, ResponseCategoryModel>().ReverseMap();
 
             CreateMap<Blog, RequestCreateBlogModel>().ReverseMap();
             CreateMap<Blog, ResponseBlogModel>().ReverseMap();
