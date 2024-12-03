@@ -2,6 +2,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Repository.Data.Entity;
+using Repository.Model;
+using Repository.Model.Promotion;
 using Repository.Repository;
 
 namespace koi_farm_api.Controllers
