@@ -96,11 +96,11 @@ namespace koi_farm_api.Controllers
                 _unitOfWork.ProductItemRepository.Update(productItem);
 
                 // Reduce Product quantity
-                var product = _unitOfWork.ProductRepository.GetById(productItem.ProductId);
+                var product = _unitOfWork.CategoryRepository.GetById(productItem.ProductId);
                 if (product != null)
                 {
                     product.Quantity -= orderItem.Quantity;
-                    _unitOfWork.ProductRepository.Update(product);
+                    _unitOfWork.CategoryRepository.Update(product);
                 }
                 else
                 {
@@ -570,11 +570,11 @@ namespace koi_farm_api.Controllers
                     productItem.Quantity += orderItem.Quantity;
                     _unitOfWork.ProductItemRepository.Update(productItem);
 
-                    var product = _unitOfWork.ProductRepository.GetById(productItem.ProductId);
+                    var product = _unitOfWork.CategoryRepository.GetById(productItem.ProductId);
                     if (product != null)
                     {
                         product.Quantity += orderItem.Quantity;
-                        _unitOfWork.ProductRepository.Update(product);
+                        _unitOfWork.CategoryRepository.Update(product);
                     }
                 }
             }

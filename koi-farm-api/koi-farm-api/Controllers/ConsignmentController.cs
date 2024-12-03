@@ -378,7 +378,7 @@
 
 //                newOrder.Items = new List<OrderItem> { newOrderItem };
 
-//                _unitOfWork.ProductRepository.Create(newProduct);
+//                _unitOfWork.CategoryRepository.Create(newProduct);
 //                _unitOfWork.OrderRepository.Create(newOrder);
 
 //                consignmentItem.Checkedout = true;
