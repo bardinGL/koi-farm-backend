@@ -14,7 +14,7 @@ namespace Repository.Repository
     public class UnitOfWork : IDisposable
     {
         private KoiFarmDbContext _context;
-        private GenericRepository<Product> _product;
+        private GenericRepository<Data.Entity.Category> _product;
         private GenericRepository<ProductItem> _productitem;
         private GenericRepository<Role> _role;
         private GenericRepository<User> _user;
@@ -90,13 +90,13 @@ namespace Repository.Repository
             }
         }
 
-        public GenericRepository<Product> ProductRepository
+        public GenericRepository<Data.Entity.Category> ProductRepository
         {
             get
             {
                 if (_product == null)
                 {
-                    _product = new GenericRepository<Product>(_context);
+                    _product = new GenericRepository<Data.Entity.Category>(_context);
                 }
                 return _product;
             }

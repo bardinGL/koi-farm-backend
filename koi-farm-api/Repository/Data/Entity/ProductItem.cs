@@ -12,8 +12,6 @@ namespace Repository.Data.Entity
         public string Name { get; set; }
         public decimal Price { get; set; }
 
-        public string Category { get; set; }
-
         public string Origin { get; set; }
 
         public string Sex { get; set; }
@@ -40,11 +38,11 @@ namespace Repository.Data.Entity
 
         public string Type { get; set; }
 
-        public string ProductId { get; set; }
+        public string CategoryId { get; set; }
 
         // Foreign key for Product entity
-        [ForeignKey(nameof(ProductId))]
-        public Product Product { get; set; }
+        [ForeignKey(nameof(CategoryId))]
+        public Category Category { get; set; }
 
         public ICollection<ProductCertificate> productCertificates { get; set; }
         public ICollection<CartItem> cartItems { get; set; }

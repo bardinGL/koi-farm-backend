@@ -23,6 +23,8 @@ namespace Repository.Data.Entity
         [Phone]
         public string? Phone { get; set; }
 
+        public string? Status { get; set; }
+
         public string RoleId { get; set; }
 
         [ForeignKey(nameof(RoleId))]

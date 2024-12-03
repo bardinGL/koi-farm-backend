@@ -104,7 +104,7 @@ namespace koi_farm_api.Controllers
                 });
             }
 
-            var product = _mapper.Map<Product>(productModel);
+            var product = _mapper.Map<Category>(productModel);
 
             _unitOfWork.ProductRepository.Create(product);
 
