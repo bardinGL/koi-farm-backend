@@ -168,7 +168,7 @@ namespace koi_farm_api.Controllers
         [HttpGet("get-product-item-by-product/{productId}")]
         public IActionResult GetProductItemByProduct(string productId)
         {
-            var product = _unitOfWork.ProductRepository.GetById(productId);
+            var product = _unitOfWork.CategoryRepository.GetById(productId);
             if (product == null)
             {
                 return NotFound(new ResponseModel
@@ -274,7 +274,7 @@ namespace koi_farm_api.Controllers
                 });
             }
 
-            var productExists = _unitOfWork.ProductRepository.GetById(productItemModel.ProductId);
+            var productExists = _unitOfWork.CategoryRepository.GetById(productItemModel.ProductId);
             if (productExists == null)
             {
                 return BadRequest(new ResponseModel
@@ -288,7 +288,7 @@ namespace koi_farm_api.Controllers
 
             var productItem = _mapper.Map<ProductItem>(productItemModel);
             _unitOfWork.ProductItemRepository.Create(productItem);
-            _unitOfWork.ProductRepository.Update(productExists);
+            _unitOfWork.CategoryRepository.Update(productExists);
 
             return Ok(new ResponseModel
             {
@@ -329,7 +329,7 @@ namespace koi_farm_api.Controllers
                 });
             }
 
-            var productExists = _unitOfWork.ProductRepository.GetById(existingProductItem.ProductId);
+            var productExists = _unitOfWork.CategoryRepository.GetById(existingProductItem.ProductId);
             if (productExists == null)
             {
                 return BadRequest(new ResponseModel
@@ -348,7 +348,7 @@ namespace koi_farm_api.Controllers
             _mapper.Map(productItemModel, existingProductItem);
 
             _unitOfWork.ProductItemRepository.Update(existingProductItem);
-            _unitOfWork.ProductRepository.Update(productExists);
+            _unitOfWork.CategoryRepository.Update(productExists);
 
             return Ok(new ResponseModel
             {
@@ -380,7 +380,7 @@ namespace koi_farm_api.Controllers
                 });
             }
 
-            var productExists = _unitOfWork.ProductRepository.GetById(productItem.ProductId);
+            var productExists = _unitOfWork.CategoryRepository.GetById(productItem.ProductId);
             if (productExists == null)
             {
                 return BadRequest(new ResponseModel
@@ -393,7 +393,7 @@ namespace koi_farm_api.Controllers
             productExists.Quantity -= productItem.Quantity;
 
             _unitOfWork.ProductItemRepository.Delete(productItem);
-            _unitOfWork.ProductRepository.Update(productExists);
+            _unitOfWork.CategoryRepository.Update(productExists);
 
             return Ok(new ResponseModel
             {
