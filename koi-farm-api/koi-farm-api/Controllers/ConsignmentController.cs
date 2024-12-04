@@ -27,6 +27,18 @@ namespace koi_farm_api.Controllers
                 });
 
             }
+            var response = consignments.Select(consignment => new
+            {
+                ConsingmentId = consignment.Id,
+                UserId = consignment.UserId,
+                ContractDate = consignment.CreatedTime,
+                Items = consignment.Items.Select(item => new
+                {
+                    ConsignmentItemId = item.Id,
+                    ConsignmentItemType = item.ProductItem.ProductItemType, 
+                })
+
+            });
         }
 
     }
