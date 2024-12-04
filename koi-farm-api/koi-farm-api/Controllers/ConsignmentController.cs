@@ -47,5 +47,25 @@ namespace koi_farm_api.Controllers
             });
         }
 
+        [HttpGet("get-consignment-items-by-productitemtype/{productitemtype}")]
+        public IActionResult GetConsignmentitemsByProductItemsType(string productitemtype)
+        {
+            var consignments = _unitOfWork.ConsignmentItemRepository.Get(c => c.ProductItem.ProductItemType.Equals(productitemtype)).ToList();
+            if (!consignments.Any())
+            {
+                return NotFound(new ResponseModel
+                {
+                    StatusCode = 404,
+                    MessageError = "There is no Consignment Items of that type"
+                });
+            }
+            var response = consignments.Select(item => new
+            {
+                ConsignmentItemId = item.Id,
+                ConsignmentItemStatus = item.Status,
+                ProductItems = item.ProductItem.
+            });
+
+        }
     }
 }
