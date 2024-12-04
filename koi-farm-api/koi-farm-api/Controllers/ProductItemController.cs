@@ -165,10 +165,10 @@ namespace koi_farm_api.Controllers
         }
 
 
-        [HttpGet("get-product-item-by-product/{productId}")]
-        public IActionResult GetProductItemByProduct(string productId)
+        [HttpGet("get-product-item-by-product/{categoryid}")]
+        public IActionResult GetProductItemByProduct(string categoryid)
         {
-            var product = _unitOfWork.CategoryRepository.GetById(productId);
+            var product = _unitOfWork.CategoryRepository.GetById(categoryid);
             if (product == null)
             {
                 return NotFound(new ResponseModel
@@ -179,7 +179,7 @@ namespace koi_farm_api.Controllers
             }
 
             var productItems = _unitOfWork.ProductItemRepository
-                .Get(r => r.CategoryId == productId && !r.Name.StartsWith("Shop") && r.BatchId == null)
+                .Get(r => r.CategoryId == categoryid && !r.Name.StartsWith("Shop") && r.BatchId == null)
                 .ToList();
 
             if (!productItems.Any())
@@ -254,7 +254,7 @@ namespace koi_farm_api.Controllers
                 productItemModel.Price < 10000 ||
                 productItemModel.Age <= 0 ||
                 productItemModel.Quantity <= 0 ||
-                string.IsNullOrEmpty(productItemModel.ProductId))
+                string.IsNullOrEmpty(productItemModel.CategoryId))
             {
                 return false;
             }
@@ -274,13 +274,13 @@ namespace koi_farm_api.Controllers
                 });
             }
 
-            var productExists = _unitOfWork.CategoryRepository.GetById(productItemModel.ProductId);
+            var productExists = _unitOfWork.CategoryRepository.GetById(productItemModel.CategoryId);
             if (productExists == null)
             {
                 return BadRequest(new ResponseModel
                 {
                     StatusCode = 400,
-                    MessageError = "Invalid ProductId. Product does not exist."
+                    MessageError = "Invalid CategoryId. Product does not exist."
                 });
             }
 
@@ -335,7 +335,7 @@ namespace koi_farm_api.Controllers
                 return BadRequest(new ResponseModel
                 {
                     StatusCode = 400,
-                    MessageError = "Invalid ProductId. Product does not exist."
+                    MessageError = "Invalid CategoryId. Product does not exist."
                 });
             }
 

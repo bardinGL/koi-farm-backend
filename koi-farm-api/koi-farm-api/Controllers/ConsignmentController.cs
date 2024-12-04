@@ -36,9 +36,14 @@ namespace koi_farm_api.Controllers
                 {
                     ConsignmentItemId = item.Id,
                     ConsignmentItemType = item.ProductItem.ProductItemType, 
-                    ConsignmentItemStatus = item
-                })
+                    ConsignmentItemStatus = item.Status,
+                }).ToList()
 
+            }).ToList();
+            return Ok(new ResponseModel
+            {
+                StatusCode = 200,
+                Data = response
             });
         }
 

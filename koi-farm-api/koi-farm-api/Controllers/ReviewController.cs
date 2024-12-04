@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Repository.Data.Entity;
+using Repository.Model;
 using Repository.Model.Review;
 using Repository.Repository;
 

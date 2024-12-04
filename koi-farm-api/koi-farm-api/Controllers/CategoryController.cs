@@ -168,7 +168,7 @@ namespace koi_farm_api.Controllers
                 return BadRequest(new ResponseModel
                 {
                     StatusCode = 400,
-                    MessageError = "ProductId cannot be null or empty."
+                    MessageError = "CategoryId cannot be null or empty."
                 });
             }
 
