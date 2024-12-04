@@ -40,6 +40,6 @@ namespace Repository.Model.ProductItem
 
         public string Type { get; set; }
 
-        public string ProductId { get; set; }
+        public string CategoryId { get; set; }
     }
 }

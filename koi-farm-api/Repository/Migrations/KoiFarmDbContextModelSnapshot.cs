@@ -182,6 +182,45 @@ namespace Repository.Migrations
                     b.ToTable("CartItem");
                 });
 
+            modelBuilder.Entity("Repository.Data.Entity.Category", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTimeOffset>("CreatedTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("DeletedTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset>("LastUpdatedTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Product");
+                });
+
             modelBuilder.Entity("Repository.Data.Entity.Certificate", b =>
                 {
                     b.Property<string>("Id")
@@ -250,16 +289,6 @@ namespace Repository.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<int>("Age")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("Checkedout")
-                        .HasColumnType("bit");
-
                     b.Property<string>("ConsignmentId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
@@ -273,12 +302,8 @@ namespace Repository.Migrations
                     b.Property<DateTimeOffset?>("DeletedTime")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<string>("FoodAmount")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ImageUrl")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<decimal>("Fee")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -286,50 +311,15 @@ namespace Repository.Migrations
                     b.Property<DateTimeOffset>("LastUpdatedTime")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<string>("MineralContent")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("OrderItemId")
+                    b.Property<string>("ProductItemId")
+                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<string>("Origin")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PH")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Personality")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Sex")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Size")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Species")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("WaterTemp")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -337,7 +327,7 @@ namespace Repository.Migrations
 
                     b.HasIndex("ConsignmentId");
 
-                    b.HasIndex("OrderItemId");
+                    b.HasIndex("ProductItemId");
 
                     b.ToTable("ConsignmentItem");
                 });
@@ -488,45 +478,6 @@ namespace Repository.Migrations
                     b.ToTable("Payment");
                 });
 
-            modelBuilder.Entity("Repository.Data.Entity.Product", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTimeOffset>("CreatedTime")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<DateTimeOffset?>("DeletedTime")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ImageUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTimeOffset>("LastUpdatedTime")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Product");
-                });
-
             modelBuilder.Entity("Repository.Data.Entity.ProductCertificate", b =>
                 {
                     b.Property<string>("Id")
@@ -579,9 +530,9 @@ namespace Repository.Migrations
                     b.Property<string>("BatchId")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<string>("Category")
+                    b.Property<string>("CategoryId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTimeOffset>("CreatedTime")
                         .HasColumnType("datetimeoffset");
@@ -630,9 +581,8 @@ namespace Repository.Migrations
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<string>("ProductId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<int>("ProductItemType")
+                        .HasColumnType("int");
 
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
@@ -661,7 +611,7 @@ namespace Repository.Migrations
 
                     b.HasIndex("BatchId");
 
-                    b.HasIndex("ProductId");
+                    b.HasIndex("CategoryId");
 
                     b.ToTable("ProductItem");
                 });
@@ -820,6 +770,9 @@ namespace Repository.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<string>("Status")
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("RoleId");
@@ -935,13 +888,15 @@ namespace Repository.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Repository.Data.Entity.OrderItem", "OrderItem")
+                    b.HasOne("Repository.Data.Entity.ProductItem", "ProductItem")
                         .WithMany()
-                        .HasForeignKey("OrderItemId");
+                        .HasForeignKey("ProductItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Consignment");
 
-                    b.Navigation("OrderItem");
+                    b.Navigation("ProductItem");
                 });
 
             modelBuilder.Entity("Repository.Data.Entity.Order", b =>
@@ -1033,15 +988,15 @@ namespace Repository.Migrations
                         .WithMany("batchItems")
                         .HasForeignKey("BatchId");
 
-                    b.HasOne("Repository.Data.Entity.Product", "Product")
+                    b.HasOne("Repository.Data.Entity.Category", "Category")
                         .WithMany("ProductItems")
-                        .HasForeignKey("ProductId")
+                        .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Batch");
 
-                    b.Navigation("Product");
+                    b.Navigation("Category");
                 });
 
             modelBuilder.Entity("Repository.Data.Entity.Review", b =>
@@ -1095,6 +1050,11 @@ namespace Repository.Migrations
                     b.Navigation("Items");
                 });
 
+            modelBuilder.Entity("Repository.Data.Entity.Category", b =>
+                {
+                    b.Navigation("ProductItems");
+                });
+
             modelBuilder.Entity("Repository.Data.Entity.Certificate", b =>
                 {
                     b.Navigation("CertificateProduct");
@@ -1108,11 +1068,6 @@ namespace Repository.Migrations
             modelBuilder.Entity("Repository.Data.Entity.Order", b =>
                 {
                     b.Navigation("Items");
-                });
-
-            modelBuilder.Entity("Repository.Data.Entity.Product", b =>
-                {
-                    b.Navigation("ProductItems");
                 });
 
             modelBuilder.Entity("Repository.Data.Entity.ProductItem", b =>
