@@ -12,5 +12,9 @@ namespace Repository.Data.Entity
         [ForeignKey(nameof(ConsignmentId))]
         public Consignment Consignment { get; set; }
 
+        public string ProductItemId { get; set; }
+        [ForeignKey(nameof(ProductItemId))]
+        public ProductItem ProductItem { get; set; }
+
     }
 }

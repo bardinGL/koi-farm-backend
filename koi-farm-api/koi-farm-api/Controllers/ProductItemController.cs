@@ -179,7 +179,7 @@ namespace koi_farm_api.Controllers
             }
 
             var productItems = _unitOfWork.ProductItemRepository
-                .Get(r => r.ProductId == productId && !r.Name.StartsWith("Shop") && r.BatchId == null)
+                .Get(r => r.CategoryId == productId && !r.Name.StartsWith("Shop") && r.BatchId == null)
                 .ToList();
 
             if (!productItems.Any())
@@ -329,7 +329,7 @@ namespace koi_farm_api.Controllers
                 });
             }
 
-            var productExists = _unitOfWork.CategoryRepository.GetById(existingProductItem.ProductId);
+            var productExists = _unitOfWork.CategoryRepository.GetById(existingProductItem.CategoryId);
             if (productExists == null)
             {
                 return BadRequest(new ResponseModel
@@ -380,7 +380,7 @@ namespace koi_farm_api.Controllers
                 });
             }
 
-            var productExists = _unitOfWork.CategoryRepository.GetById(productItem.ProductId);
+            var productExists = _unitOfWork.CategoryRepository.GetById(productItem.CategoryId);
             if (productExists == null)
             {
                 return BadRequest(new ResponseModel

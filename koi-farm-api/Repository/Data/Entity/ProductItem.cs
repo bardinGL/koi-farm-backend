@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Repository.Data.Entity.Enum;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics.CodeAnalysis;
 
@@ -57,6 +58,7 @@ namespace Repository.Data.Entity
         [ForeignKey(nameof(BatchId))]
         public Batch? Batch { get; set; }
 
+        public ProductItemTypeEnum ProductItemType { get; set; }
 
     }
 }
