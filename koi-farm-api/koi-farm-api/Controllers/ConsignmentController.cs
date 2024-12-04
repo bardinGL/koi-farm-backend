@@ -36,6 +36,7 @@ namespace koi_farm_api.Controllers
                 {
                     ConsignmentItemId = item.Id,
                     ConsignmentItemType = item.ProductItem.ProductItemType, 
+                    ConsignmentItemStatus = item
                 })
 
             });
