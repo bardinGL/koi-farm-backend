@@ -2,11 +2,17 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Repository.Data.Entity;
+using Repository.EmailService;
+using Repository.ForgotPasswordService;
 using Repository.Helper;
 using Repository.Model;
 using Repository.Model.Auth;
+using Repository.Model.Email;
 using Repository.Model.User;
 using Repository.Repository;
+using System.Runtime.Caching;
+using Microsoft.Extensions.Caching.Memory;
+using MemoryCache = System.Runtime.Caching.MemoryCache;
 
 namespace koi_farm_api.Controllers
 {
@@ -16,14 +22,27 @@ namespace koi_farm_api.Controllers
     {
         private readonly UnitOfWork _unitOfWork;
         private readonly GenerateToken _generateToken;
+        private readonly IEmailService _emailService;
+        private readonly IConfiguration _configuration;
+        private readonly ITokenService _tokenService;
+        private readonly IMemoryCache _memoryCache;
+
 
         public AuthController(
             UnitOfWork unitOfWork,
             GenerateToken generateToken,
-            IConfiguration configuration)
+            IConfiguration configuration,
+        ITokenService tokenService,
+            IServiceProvider serviceProvider,
+            IMemoryCache memoryCache
+            )
         {
+            _memoryCache = memoryCache;
             _unitOfWork = unitOfWork;
             _generateToken = generateToken;
+            _tokenService = tokenService;
+            _emailService = serviceProvider.GetRequiredService<IEmailService>();
+            _configuration = configuration;
         }
 
         [HttpPost("signin")]
@@ -64,6 +83,87 @@ namespace koi_farm_api.Controllers
             {
                 return StatusCode(500, "Internal server error: " + ex.Message);
             }
+        }
+
+        [HttpGet("verify-email/token={token}")]
+        public IActionResult VerifyEmail(string token)
+        {
+            if (_memoryCache.Get(token) != null)
+            {
+                string email = (string)_memoryCache.Get(token);
+                var user = _unitOfWork.UserRepository.GetAll().FirstOrDefault(x => x.Email == email);
+                user.Status = "Active";
+                _unitOfWork.UserRepository.Update(user);
+                _unitOfWork.SaveChange();
+                _memoryCache.Remove(token);
+                var JWTtoken = _generateToken.GenerateTokenModel(user);
+                return Redirect($"https://www.wearefpters.xyz/token={JWTtoken.Token}"); 
+            }
+            else
+            {
+                return BadRequest(new ResponseModel
+                {
+                    StatusCode = 500,
+                    MessageError = "EmailisExits"
+                });
+            }
+        }
+
+        [HttpPost("signup-email")]
+        public IActionResult SignUpWithEmail([FromBody] SignUpModel signUpModel)
+        {
+            var user = _unitOfWork.UserRepository.GetAll().FirstOrDefault(x => x.Email == signUpModel.Email);
+
+            if (user != null)
+            {
+                return BadRequest(new ResponseModel
+                {
+                    StatusCode = 500,
+                    MessageError = "EmailisExist!"
+                });
+            }
+
+            var newUser = new User();
+            newUser.Id = Guid.NewGuid().ToString();
+            newUser.Name = signUpModel.Name;
+            newUser.Address = signUpModel.Address;
+            newUser.Email = signUpModel.Email;
+            newUser.Password = signUpModel.Password;
+            newUser.Phone = signUpModel.Phone;
+            newUser.Status = "Pending";
+            newUser.RoleId = signUpModel.RoleId.ToString();
+            _unitOfWork.UserRepository.Create(newUser);
+            _unitOfWork.SaveChange();
+            var token = Guid.NewGuid();
+            var frontendUrl = _configuration["FrontEndPort:PaymentUrl"];
+            
+
+            // Send reset email
+            var resetUrl = $"localhost:44365/api/Auth/verify-email/token={token}";
+            _emailService.SendMail(new SendMailModel
+            {
+                ReceiveAddress = signUpModel.Email,
+                Title = "Password Reset Request",
+                Content = $"Click the link to reset your password: {resetUrl}"
+            });
+            string cachekey = token.ToString();
+            string cachevalue = signUpModel.Email;
+            DateTimeOffset exp = DateTimeOffset.Now.AddMinutes(5);
+            _memoryCache.Set(cachekey, cachevalue, exp);
+            if (_memoryCache.Get(cachekey) == null)
+            {
+                return BadRequest(new ResponseModel
+                {
+                    StatusCode = 500,
+                    MessageError = "System Fail Please Reload"
+                });
+            }
+            return Ok(new ResponseModel
+            {
+                StatusCode = 200,
+                MessageError = "Successfully request password reset"
+            });
+            
         }
 
         [HttpPost("refresh")]
