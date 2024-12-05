@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Repository.Model;
+using Repository.Model.Consignment;
 using Repository.Repository;
 
 namespace koi_farm_api.Controllers
@@ -62,9 +63,38 @@ namespace koi_farm_api.Controllers
             var response = consignments.Select(item => new
             {
                 ConsignmentItemId = item.Id,
-                ConsignmentItemStatus = item.Status,
-                ProductItems = item.ProductItem.
+                ProductItems = item.ProductItem,
+                ConsignmentItemStatus = item.Status
+            }).ToList();
+            return Ok(new ResponseModel
+            {
+                StatusCode = 200,
+                Data = response
             });
+        }
+
+        [HttpPut("create-consignment/{saleprice}")]
+        public IActionResult CreateConsignment(Decimal saleprice ,[FromBody]CreateConsignmentItemRequestModel createModel)
+        {
+            if (createModel == null)
+            {
+                return BadRequest(new ResponseModel
+                {
+                    StatusCode = 400,
+                    MessageError = "Invalid ProductItem data. Every field is required."
+                });
+            }
+
+            var productExists = _unitOfWork.CategoryRepository.GetById(createModel.CategoryId);
+            if (productExists == null)
+            {
+                return BadRequest(new ResponseModel
+                {
+                    StatusCode = 400,
+                    MessageError = "Invalid CategoryId. Product does not exist."
+                });
+            }
+
 
         }
     }
