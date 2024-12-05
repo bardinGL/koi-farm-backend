@@ -44,9 +44,12 @@ namespace Repository.Data
         {
             if (!optionsBuilder.IsConfigured)
             {
+                /*
                 optionsBuilder.UseSqlServer(
                     GetConnectionString(),
                     b => b.MigrationsAssembly("Repository")); // "Repository" is the name of the class library project
+            */
+                optionsBuilder.UseSqlServer("Server=DESKTOP-T4BVTKU\\SQLEXPRESS;Database=KoiFarm;User Id=sa;Password=123456;Trust Server Certificate=True");
             }
         }
 
