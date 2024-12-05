@@ -59,6 +59,6 @@ namespace Repository.Data.Entity
         public Batch? Batch { get; set; }
 
         public ProductItemTypeEnum ProductItemType { get; set; }
-
+        public string ProductId { get; set; }
     }
 }

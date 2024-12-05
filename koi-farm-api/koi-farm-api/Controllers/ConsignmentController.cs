@@ -9,6 +9,7 @@ namespace koi_farm_api.Controllers
     public class ConsignmentController : ControllerBase
     {
         private readonly UnitOfWork _unitOfWork;
+
         public ConsignmentController(UnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
@@ -18,7 +19,7 @@ namespace koi_farm_api.Controllers
         public IActionResult GetAllConsignments()
         {
             var consignments = _unitOfWork.ConsignmentRepository.GetAll().ToList();
-            if(!consignments.Any())
+            if (!consignments.Any())
             {
                 return NotFound(new ResponseModel
                 {
@@ -27,6 +28,7 @@ namespace koi_farm_api.Controllers
                 });
 
             }
+
             var response = consignments.Select(consignment => new
             {
                 ConsingmentId = consignment.Id,
@@ -35,11 +37,15 @@ namespace koi_farm_api.Controllers
                 Items = consignment.Items.Select(item => new
                 {
                     ConsignmentItemId = item.Id,
-                    ConsignmentItemType = item.ProductItem.ProductItemType, 
+                    ConsignmentItemType = item.ProductItem.ProductItemType,
                 })
 
             });
-        }
+            return Ok();
 
+        }
+    
+
+        
     }
 }
