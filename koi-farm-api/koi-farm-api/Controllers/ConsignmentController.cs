@@ -29,31 +29,28 @@ namespace koi_farm_api.Controllers
                     StatusCode = 404,
                     MessageError = "No Consignment was found"
                 });
-
             }
 
             var response = consignments.Select(consignment => new
             {
-                ConsingmentId = consignment.Id,
+                ConsignmentId = consignment.Id, // Fixed spelling from "ConsingmentId"
                 UserId = consignment.UserId,
                 ContractDate = consignment.CreatedTime,
                 Items = consignment.Items.Select(item => new
                 {
                     ConsignmentItemId = item.Id,
-                    ConsignmentItemO = item.
-                    ConsignmentItemType = item.ProductItem.ProductItemType, 
-                    ConsignmentItemStatus = item.Status,
-                }).ToList()
-                    ConsignmentItemType = item.ProductItem.ProductItemType,
-                })
+                    ConsignmentItemType = item.ProductItem.ProductItemType, // Removed duplicated field
+                    ConsignmentItemStatus = item.Status
+                }).ToList() // Properly closed inner ToList
+            }).ToList(); // Properly closed outer ToList
 
-            }).ToList();
             return Ok(new ResponseModel
             {
                 StatusCode = 200,
                 Data = response
             });
         }
+
 
         [HttpGet("get-consignment-items-by-productitemtype/{productitemtype}")]
         public IActionResult GetConsignmentitemsByProductItemsType(string productitemtype)
