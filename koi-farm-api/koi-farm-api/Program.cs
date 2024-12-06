@@ -81,7 +81,7 @@ builder.Services.AddScoped<UnitOfWork>();
 builder.Services.AddScoped<GenerateToken>();
 
 //builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-
+builder.Services.AddMemoryCache();
 // JWT Authentication
 builder.Services.AddAuthentication("Bearer").AddJwtBearer(options =>
 {
