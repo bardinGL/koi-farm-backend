@@ -8,6 +8,7 @@ namespace Repository.Data.Entity
     {
         public string Name { get; set; }
         public decimal Fee { get; set; }
+        public string Status { get; set; }
         public string ConsignmentId { get; set; }
         [ForeignKey(nameof(ConsignmentId))]
         public Consignment Consignment { get; set; }

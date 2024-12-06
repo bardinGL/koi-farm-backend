@@ -96,7 +96,7 @@ namespace koi_farm_api.Controllers
                 _unitOfWork.ProductItemRepository.Update(productItem);
 
                 // Reduce Product quantity
-                var product = _unitOfWork.CategoryRepository.GetById(productItem.ProductId);
+                var product = _unitOfWork.CategoryRepository.GetById(productItem.CategoryId);
                 if (product != null)
                 {
                     product.Quantity -= orderItem.Quantity;
@@ -570,7 +570,7 @@ namespace koi_farm_api.Controllers
                     productItem.Quantity += orderItem.Quantity;
                     _unitOfWork.ProductItemRepository.Update(productItem);
 
-                    var product = _unitOfWork.CategoryRepository.GetById(productItem.ProductId);
+                    var product = _unitOfWork.CategoryRepository.GetById(productItem.CategoryId);
                     if (product != null)
                     {
                         product.Quantity += orderItem.Quantity;

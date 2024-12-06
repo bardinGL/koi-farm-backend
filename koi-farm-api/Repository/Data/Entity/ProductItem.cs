@@ -58,7 +58,7 @@ namespace Repository.Data.Entity
         [ForeignKey(nameof(BatchId))]
         public Batch? Batch { get; set; }
 
-        public ProductItemTypeEnum ProductItemType { get; set; }
-        public string ProductId { get; set; }
+        public ProductItemTypeEnum? ProductItemType { get; set; }
+
     }
 }
