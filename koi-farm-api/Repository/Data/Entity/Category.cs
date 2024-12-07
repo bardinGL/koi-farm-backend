@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Repository.Data.Entity
 {
-    [Table("Product")]
+    [Table("Category")]
     public class Category : Entity    
     {
         [Required]

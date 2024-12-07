@@ -38,13 +38,13 @@ namespace koi_farm_api.Controllers
                 Items = consignment.Items.Select(item => new
                 {
                     ConsignmentItemId = item.Id,
-                    ConsignmentItemType = item.ProductItem.ProductItemType, 
+                    ConsignmentItemType = item.ProductItem.ProductItemType,
                     ConsignmentItemStatus = item.Status,
                 }).ToList()
-                    ConsignmentItemType = item.ProductItem.ProductItemType,
-                })
+                ConsignmentItemType = item.ProductItem.ProductItemType,
+            })
 
-            }).ToList();
+    }).ToList();
             return Ok(new ResponseModel
             {
                 StatusCode = 200,
