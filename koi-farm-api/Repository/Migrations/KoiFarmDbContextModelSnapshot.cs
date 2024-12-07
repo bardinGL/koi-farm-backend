@@ -293,6 +293,9 @@ namespace Repository.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<int?>("ConsignmentItemType")
+                        .HasColumnType("int");
+
                     b.Property<DateTimeOffset>("CreatedTime")
                         .HasColumnType("datetimeoffset");
 
@@ -318,6 +321,10 @@ namespace Repository.Migrations
                     b.Property<string>("ProductItemId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -577,7 +584,7 @@ namespace Repository.Migrations
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("ProductItemType")
+                    b.Property<int?>("ProductItemType")
                         .HasColumnType("int");
 
                     b.Property<int>("Quantity")

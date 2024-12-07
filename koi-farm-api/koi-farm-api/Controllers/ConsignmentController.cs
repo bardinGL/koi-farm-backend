@@ -4,6 +4,9 @@ using Repository.Data.Entity;
 using Repository.Model;
 using Repository.Model.Consignment;
 using Repository.Repository;
+using Repository.Model.Email;
+using System.Text;
+using Repository.EmailService;
 
 namespace koi_farm_api.Controllers
 {
@@ -12,10 +15,13 @@ namespace koi_farm_api.Controllers
     public class ConsignmentController : ControllerBase
     {
         private readonly UnitOfWork _unitOfWork;
+        private readonly IEmailService _emailService;
 
-        public ConsignmentController(UnitOfWork unitOfWork)
+
+        public ConsignmentController(UnitOfWork unitOfWork, IServiceProvider serviceProvider)
         {
             _unitOfWork = unitOfWork;
+            _emailService = serviceProvider.GetRequiredService<IEmailService>();
         }
 
         [HttpGet("get-all-consignments")]
@@ -33,16 +39,16 @@ namespace koi_farm_api.Controllers
 
             var response = consignments.Select(consignment => new
             {
-                ConsignmentId = consignment.Id, // Fixed spelling from "ConsingmentId"
+                ConsignmentId = consignment.Id,
                 UserId = consignment.UserId,
                 ContractDate = consignment.CreatedTime,
                 Items = consignment.Items.Select(item => new
                 {
                     ConsignmentItemId = item.Id,
-                    ConsignmentItemType = item.ProductItem.ProductItemType, // Removed duplicated field
+                    ConsignmentItemType = item.ProductItem.ProductItemType,
                     ConsignmentItemStatus = item.Status
-                }).ToList() // Properly closed inner ToList
-            }).ToList(); // Properly closed outer ToList
+                }).ToList()
+            }).ToList();
 
             return Ok(new ResponseModel
             {
@@ -127,8 +133,8 @@ namespace koi_farm_api.Controllers
         }
 
 
-        [HttpPost("create-productitem")]
-        public IActionResult CreateProductItem([FromBody] CreateConsignmentItemRequestModel createModel, decimal? salePrice = null)
+        [HttpPost("create-consignmentitem")]
+        public IActionResult CreateConsignmentItem([FromBody] CreateConsignmentItemRequestModel createModel, decimal? salePrice = null)
         {
             // Extract UserID from token claims
             var userId = HttpContext.User.FindFirst("UserID")?.Value;
@@ -184,7 +190,6 @@ namespace koi_farm_api.Controllers
                 MineralContent = createModel.MineralContent,
                 PH = createModel.PH,
                 ImageUrl = createModel.ImageUrl,
-                Quantity = createModel.Quantity,
                 Type = createModel.Type,
                 ProductItemType = productType
             };
@@ -222,6 +227,233 @@ namespace koi_farm_api.Controllers
                 Data = response
             });
         }
+
+        [HttpPut("update-consignment-item/{consignmentItemId}")]
+        public IActionResult UpdateConsignmentItem(string consignmentItemId, [FromBody] UpdateConsignmentItemRequestModel updateModel)
+        {
+            // Check if consignment item exists
+            var consignmentItem = _unitOfWork.ConsignmentItemRepository
+                .Get(ci => ci.Id == consignmentItemId)
+                .FirstOrDefault();
+
+            if (consignmentItem == null)
+            {
+                return NotFound(new ResponseModel
+                {
+                    StatusCode = 404,
+                    MessageError = $"Consignment item with ID '{consignmentItemId}' not found."
+                });
+            }
+
+            // Check if the status is "Pending"
+            if (!consignmentItem.Status.Equals("Pending", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(new ResponseModel
+                {
+                    StatusCode = 400,
+                    MessageError = $"Consignment item with ID '{consignmentItemId}' is already '{consignmentItem.Status}' and cannot be updated."
+                });
+            }
+
+            // Update consignment item properties
+            if (!string.IsNullOrEmpty(updateModel.Status))
+            {
+                consignmentItem.Status = updateModel.Status;
+            }
+
+            if (updateModel.Fee.HasValue)
+            {
+                consignmentItem.Fee = updateModel.Fee.Value;
+            }
+
+            if (!string.IsNullOrEmpty(updateModel.Name))
+            {
+                consignmentItem.Name = updateModel.Name;
+            }
+
+            // Update related product item properties if provided
+            if (updateModel.ProductItemUpdates != null)
+            {
+                var productItem = consignmentItem.ProductItem;
+
+                if (productItem != null)
+                {
+                    if (!string.IsNullOrEmpty(updateModel.ProductItemUpdates.Name))
+                    {
+                        productItem.Name = updateModel.ProductItemUpdates.Name;
+                    }
+
+                    if (updateModel.ProductItemUpdates.Price.HasValue)
+                    {
+                        productItem.Price = updateModel.ProductItemUpdates.Price.Value;
+                    }
+
+                    // Update more fields as needed
+                }
+            }
+
+            // Save changes
+            _unitOfWork.SaveChange();
+
+            return Ok(new ResponseModel
+            {
+                StatusCode = 200,
+                Data = new
+                {
+                    ConsignmentItemId = consignmentItem.Id,
+                    UpdatedFields = updateModel
+                }
+            });
+        }
+
+        [HttpDelete("delete-consignment-item/{id}")]
+        public IActionResult DeleteConsignmentItem(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return BadRequest(new ResponseModel
+                {
+                    StatusCode = 400,
+                    MessageError = "ConsignmentItemId cannot be null or empty."
+                });
+            }
+
+            // Retrieve the consignment item by its ID
+            var consignmentItem = _unitOfWork.ConsignmentItemRepository.GetById(id);
+
+            if (consignmentItem == null)
+            {
+                return NotFound(new ResponseModel
+                {
+                    StatusCode = 404,
+                    MessageError = $"Consignment item with Id: {id} not found."
+                });
+            }
+
+            // Delete the consignment item
+            _unitOfWork.ConsignmentItemRepository.Delete(consignmentItem);
+            _unitOfWork.SaveChange(); // Save changes after deletion
+
+            return Ok(new ResponseModel
+            {
+                StatusCode = 200,
+                Data = $"Consignment item with ID {id} successfully deleted."
+            });
+        }
+
+
+        [HttpPost("notify-seller/{productItemId}")]
+        public IActionResult NotifySeller(string productItemId)
+        {
+            // Validate the ProductItemId
+            if (string.IsNullOrEmpty(productItemId))
+            {
+                return BadRequest(new ResponseModel
+                {
+                    StatusCode = 400,
+                    MessageError = "ProductItemId cannot be null or empty."
+                });
+            }
+
+            // Retrieve the ProductItem
+            var productItem = _unitOfWork.ProductItemRepository.GetById(productItemId);
+            if (productItem == null)
+            {
+                return NotFound(new ResponseModel
+                {
+                    StatusCode = 404,
+                    MessageError = $"ProductItem with ID {productItemId} not found."
+                });
+            }
+
+            // Check if ProductItemType is ShopUser
+            if (productItem.ProductItemType != ProductItemTypeEnum.ShopUser)
+            {
+                return BadRequest(new ResponseModel
+                {
+                    StatusCode = 400,
+                    MessageError = $"ProductItem with ID {productItemId} is not of type 'ShopUser'."
+                });
+            }
+
+            // Retrieve the ConsignmentItem associated with this ProductItem
+            var consignmentItem = _unitOfWork.ConsignmentItemRepository
+                .Get(ci => ci.ProductItemId == productItemId)
+                .FirstOrDefault();
+
+            if (consignmentItem == null)
+            {
+                return NotFound(new ResponseModel
+                {
+                    StatusCode = 404,
+                    MessageError = $"ConsignmentItem associated with ProductItem ID {productItemId} not found."
+                });
+            }
+
+            // Retrieve the Consignment associated with this ConsignmentItem
+            var consignment = _unitOfWork.ConsignmentRepository
+                .Get(c => c.Id == consignmentItem.ConsignmentId)
+                .FirstOrDefault();
+
+            if (consignment == null)
+            {
+                return NotFound(new ResponseModel
+                {
+                    StatusCode = 404,
+                    MessageError = $"Consignment associated with ConsignmentItem ID {consignmentItem.Id} not found."
+                });
+            }
+
+            // Retrieve the User associated with this Consignment
+            var user = _unitOfWork.UserRepository.GetById(consignment.UserId);
+            if (user == null)
+            {
+                return NotFound(new ResponseModel
+                {
+                    StatusCode = 404,
+                    MessageError = $"User associated with Consignment ID {consignment.Id} not found."
+                });
+            }
+
+            // Create email content
+            var emailContent = new StringBuilder();
+            emailContent.AppendLine($"<p>Dear {user.Name},</p>");
+            emailContent.AppendLine($"<p>Your product, <strong>{productItem.Name}</strong>, has been sold through our system.</p>");
+            emailContent.AppendLine("<p>You can now retrieve the funds from your account.</p>");
+            emailContent.AppendLine("<br>");
+            emailContent.AppendLine("<p>Thank you for using our platform!</p>");
+            emailContent.AppendLine("<p>Best regards,</p>");
+            emailContent.AppendLine("<p>KoiShop</p>");
+
+            // Create and send email
+            var emailModel = new SendMailModel
+            {
+                ReceiveAddress = user.Email,
+                Title = "Your Product Has Been Sold!",
+                Content = emailContent.ToString()
+            };
+
+            try
+            {
+                _emailService.SendMail(emailModel);
+            }
+            catch (Exception ex)
+            {
+                // Log exception
+                return StatusCode(500, new ResponseModel
+                {
+                    StatusCode = 500,
+                    MessageError = $"Failed to send email notification: {ex.Message}"
+                });
+            }
+
+            return Ok(new ResponseModel
+            {
+                StatusCode = 200,
+                Data = $"Notification email sent successfully to {user.Email}."
+            });
+        }
+
 
     }
 }

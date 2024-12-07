@@ -12,7 +12,7 @@ using Repository.Data;
 namespace Repository.Migrations
 {
     [DbContext(typeof(KoiFarmDbContext))]
-    [Migration("20241204054133_initialMigration")]
+    [Migration("20241206061222_initialMigration")]
     partial class initialMigration
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -294,6 +294,9 @@ namespace Repository.Migrations
                     b.Property<string>("ConsignmentId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<int?>("ConsignmentItemType")
+                        .HasColumnType("int");
 
                     b.Property<DateTimeOffset>("CreatedTime")
                         .HasColumnType("datetimeoffset");
@@ -583,7 +586,7 @@ namespace Repository.Migrations
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("ProductItemType")
+                    b.Property<int?>("ProductItemType")
                         .HasColumnType("int");
 
                     b.Property<int>("Quantity")

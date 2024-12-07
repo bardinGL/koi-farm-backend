@@ -32,7 +32,7 @@ namespace Repository.Model.Consignment
 
         public string ImageUrl { get; set; }
 
-        public int Quantity { get; set; }
+        public int Quantity { get; set; } = 1;
 
         public string Type { get; set; } = "Approved";
 

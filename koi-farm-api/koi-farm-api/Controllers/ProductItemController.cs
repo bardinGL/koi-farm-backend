@@ -28,7 +28,7 @@ namespace koi_farm_api.Controllers
         public IActionResult GetAllProductItems(int pageIndex = 1, int pageSize = 10, string? searchQuery = null)
         {
             var productItems = _unitOfWork.ProductItemRepository
-                .Get(c => !c.IsDeleted && !c.Type.StartsWith("Shop") && c.BatchId == null)
+                .Get(c => !c.IsDeleted && c.ProductItemType != Repository.Data.Entity.Enum.ProductItemTypeEnum.Healthcare && c.BatchId == null)
                 .OrderByDescending(c => c.CreatedTime)
                 .ToList();
 
@@ -79,7 +79,7 @@ namespace koi_farm_api.Controllers
         public IActionResult GetAllBatchProductItems()
         {
             var productItems = _unitOfWork.ProductItemRepository
-                .Get(c => !c.IsDeleted && !c.Name.StartsWith("Shop") && c.BatchId != null)
+                .Get(c => !c.IsDeleted && c.ProductItemType != Repository.Data.Entity.Enum.ProductItemTypeEnum.Healthcare && c.BatchId != null)
                 .ToList();
 
             if (!productItems.Any())
@@ -112,7 +112,7 @@ namespace koi_farm_api.Controllers
                 });
             }
 
-            var productItem = _unitOfWork.ProductItemRepository.Get(c => c.Id == id && c.BatchId == null).FirstOrDefault();
+            var productItem = _unitOfWork.ProductItemRepository.Get(c => c.Id == id && c.BatchId == null && c.ProductItemType != Repository.Data.Entity.Enum.ProductItemTypeEnum.Healthcare).FirstOrDefault();
 
             if (productItem == null || productItem.Name.StartsWith("Shop"))
             {
@@ -144,7 +144,7 @@ namespace koi_farm_api.Controllers
                 });
             }
 
-            var productItem = _unitOfWork.ProductItemRepository.Get(c => c.Id == id && c.BatchId != null).FirstOrDefault();
+            var productItem = _unitOfWork.ProductItemRepository.Get(c => c.Id == id && c.BatchId != null && c.ProductItemType != Repository.Data.Entity.Enum.ProductItemTypeEnum.Healthcare).FirstOrDefault();
 
             if (productItem == null || productItem.Name.StartsWith("Shop"))
             {
@@ -179,7 +179,7 @@ namespace koi_farm_api.Controllers
             }
 
             var productItems = _unitOfWork.ProductItemRepository
-                .Get(r => r.CategoryId == categoryid && !r.Name.StartsWith("Shop") && r.BatchId == null)
+                .Get(r => r.CategoryId == categoryid && r.ProductItemType != Repository.Data.Entity.Enum.ProductItemTypeEnum.Healthcare && r.BatchId == null)
                 .ToList();
 
             if (!productItems.Any())
@@ -214,7 +214,7 @@ namespace koi_farm_api.Controllers
             }
 
             var productItems = _unitOfWork.ProductItemRepository
-                .Get(r => r.BatchId == batchId && !r.Name.StartsWith("Shop"))
+                .Get(r => r.BatchId == batchId && r.ProductItemType != Repository.Data.Entity.Enum.ProductItemTypeEnum.Healthcare)
                 .ToList();
 
             if (!productItems.Any())
