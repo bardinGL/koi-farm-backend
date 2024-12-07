@@ -1,0 +1,7 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/koi-farm-api/Repository/Migrations/20241206061222_initialMigration.Designer.cs
+/koi-farm-api/Repository/Migrations/20241206150007_InitialCreate.cs
+/koi-farm-api/Repository/Migrations/20241206150007_InitialCreate.Designer.cs
