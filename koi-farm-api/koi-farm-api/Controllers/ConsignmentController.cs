@@ -205,13 +205,25 @@ namespace koi_farm_api.Controllers
                 consignment.Items = new List<ConsignmentItems>(); // Ensure Items is initialized
             }
 
-            // Determine product type and properties
+            // Determine product type
             var productType = salePrice.HasValue && salePrice.Value > 0
                 ? ProductItemTypeEnum.ShopUser
                 : ProductItemTypeEnum.Healthcare;
 
-            var productPrice = salePrice ?? 0; // Default price for healthcare
-            const decimal defaultFee = 25000; // Default fee for consignment items
+            // Calculate price and fee based on product type
+            decimal productPrice = 0;
+            decimal fee = 0;
+
+            if (productType == ProductItemTypeEnum.ShopUser)
+            {
+                productPrice = salePrice.Value * 1.15m; // 115% of salePrice
+                fee = salePrice.Value * 0.15m; // 15% of salePrice
+            }
+            else if (productType == ProductItemTypeEnum.Healthcare)
+            {
+                productPrice = 0; // Healthcare items have no price
+                fee = 25000; // Fixed fee for Healthcare items
+            }
 
             // Create product item
             var productItem = new ProductItem
@@ -241,7 +253,7 @@ namespace koi_farm_api.Controllers
             var consignmentItem = new ConsignmentItems
             {
                 Name = productItem.Name,
-                Fee = defaultFee,
+                Fee = fee,
                 Status = "Pending",
                 ProductItemId = productItem.Id,
                 ConsignmentId = consignment.Id,
@@ -272,6 +284,7 @@ namespace koi_farm_api.Controllers
                 Data = response
             });
         }
+
 
 
 
