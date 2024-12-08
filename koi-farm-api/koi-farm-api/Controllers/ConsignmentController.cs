@@ -325,9 +325,19 @@ namespace koi_farm_api.Controllers
         [HttpPut("update-consignment-item/{consignmentItemId}")]
         public IActionResult UpdateConsignmentItem(string consignmentItemId, [FromBody] UpdateConsignmentItemRequestModel updateModel)
         {
-            // Check if consignment item exists
+            // Validate input
+            if (string.IsNullOrEmpty(consignmentItemId) || updateModel == null)
+            {
+                return BadRequest(new ResponseModel
+                {
+                    StatusCode = 400,
+                    MessageError = "Invalid input. Consignment item ID or update model is missing."
+                });
+            }
+
+            // Retrieve the consignment item with its related ProductItem
             var consignmentItem = _unitOfWork.ConsignmentItemRepository
-                .Get(ci => ci.Id == consignmentItemId)
+                .Get(ci => ci.Id == consignmentItemId, ci => ci.ProductItem)
                 .FirstOrDefault();
 
             if (consignmentItem == null)
@@ -339,56 +349,40 @@ namespace koi_farm_api.Controllers
                 });
             }
 
-            // Check if the status is "Pending"
-            if (!consignmentItem.Status.Equals("Pending", StringComparison.OrdinalIgnoreCase))
+            // Validate the current status of the consignment item
+            if (!string.Equals(consignmentItem.Status, "Pending", StringComparison.OrdinalIgnoreCase))
             {
                 return BadRequest(new ResponseModel
                 {
                     StatusCode = 400,
-                    MessageError = $"Consignment item with ID '{consignmentItemId}' is already '{consignmentItem.Status}' and cannot be updated."
+                    MessageError = $"Consignment item with ID '{consignmentItemId}' cannot be updated as it is '{consignmentItem.Status}'."
                 });
             }
 
-            // Update consignment item properties
-            if (!string.IsNullOrEmpty(updateModel.Status))
+            // Update fields of the consignment item
+            UpdateConsignmentItemFields(consignmentItem, updateModel);
+
+            // Update related ProductItem fields if applicable
+            if (updateModel.ProductItemUpdates != null && consignmentItem.ProductItem != null)
             {
-                consignmentItem.Status = updateModel.Status;
+                UpdateProductItemFields(consignmentItem.ProductItem, updateModel.ProductItemUpdates);
             }
 
-            if (updateModel.Fee.HasValue)
+            // Save changes to the database
+            try
             {
-                consignmentItem.Fee = updateModel.Fee.Value;
+                _unitOfWork.SaveChange();
             }
-
-            if (!string.IsNullOrEmpty(updateModel.Name))
+            catch (Exception ex)
             {
-                consignmentItem.Name = updateModel.Name;
-            }
-
-            // Update related product item properties if provided
-            if (updateModel.ProductItemUpdates != null)
-            {
-                var productItem = consignmentItem.ProductItem;
-
-                if (productItem != null)
+                return StatusCode(500, new ResponseModel
                 {
-                    if (!string.IsNullOrEmpty(updateModel.ProductItemUpdates.Name))
-                    {
-                        productItem.Name = updateModel.ProductItemUpdates.Name;
-                    }
-
-                    if (updateModel.ProductItemUpdates.Price.HasValue)
-                    {
-                        productItem.Price = updateModel.ProductItemUpdates.Price.Value;
-                    }
-
-                    // Update more fields as needed
-                }
+                    StatusCode = 500,
+                    MessageError = $"Failed to update consignment item: {ex.Message}"
+                });
             }
 
-            // Save changes
-            _unitOfWork.SaveChange();
-
+            // Return a success response
             return Ok(new ResponseModel
             {
                 StatusCode = 200,
@@ -399,6 +393,53 @@ namespace koi_farm_api.Controllers
                 }
             });
         }
+
+        private void UpdateConsignmentItemFields(ConsignmentItems consignmentItem, UpdateConsignmentItemRequestModel updateModel)
+        {
+            if (!string.IsNullOrEmpty(updateModel.Name))
+            {
+                consignmentItem.Name = updateModel.Name.Trim();
+            }
+
+            if (!string.IsNullOrEmpty(updateModel.Status))
+            {
+                consignmentItem.Status = updateModel.Status.Trim();
+            }
+
+            if (updateModel.Fee.HasValue)
+            {
+                consignmentItem.Fee = updateModel.Fee.Value;
+            }
+        }
+
+        private void UpdateProductItemFields(ProductItem productItem, UpdateProductItemRequestModel productItemUpdates)
+        {
+            if (!string.IsNullOrEmpty(productItemUpdates.Name))
+            {
+                productItem.Name = productItemUpdates.Name.Trim();
+            }
+
+            if (productItemUpdates.Price.HasValue)
+            {
+                productItem.Price = productItemUpdates.Price.Value;
+            }
+
+            if (productItemUpdates.Quantity.HasValue)
+            {
+                productItem.Quantity = productItemUpdates.Quantity.Value;
+            }
+
+            if (!string.IsNullOrEmpty(productItemUpdates.Type))
+            {
+                productItem.Type = productItemUpdates.Type.Trim();
+            }
+
+            if (!string.IsNullOrEmpty(productItemUpdates.ImageUrl))
+            {
+                productItem.ImageUrl = productItemUpdates.ImageUrl.Trim();
+            }
+        }
+
 
         [HttpDelete("delete-consignment-item/{id}")]
         public IActionResult DeleteConsignmentItem(string id)
