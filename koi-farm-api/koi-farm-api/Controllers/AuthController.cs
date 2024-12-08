@@ -74,7 +74,7 @@ namespace koi_farm_api.Controllers
                             Email = user.Email,
                             Address = user.Address,
                             Phone = user.Phone,
-                            RoleId = user.RoleId
+                            RoleId = "User",
                         }
                     }
                 });
@@ -91,7 +91,7 @@ namespace koi_farm_api.Controllers
             if (_memoryCache.Get(token) != null)
             {
                 string email = (string)_memoryCache.Get(token);
-                var user = _unitOfWork.UserRepository.GetAll().FirstOrDefault(x => x.Email == email);
+                var user = _unitOfWork.UserRepository.GetSingle(x => x.Email == email,includeProperties: q => q.Role);
                 user.Status = "Active";
                 _unitOfWork.UserRepository.Update(user);
                 _unitOfWork.SaveChange();
@@ -139,7 +139,7 @@ namespace koi_farm_api.Controllers
             
 
             // Send reset email
-            var resetUrl = $"localhost:44365/api/Auth/verify-email/token={token}";
+            var resetUrl = $"https://localhost:44365/api/Auth/verify-email/token={token}";
             _emailService.SendMail(new SendMailModel
             {
                 ReceiveAddress = signUpModel.Email,

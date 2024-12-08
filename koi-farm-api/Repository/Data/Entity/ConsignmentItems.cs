@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Repository.Data.Entity.Enum;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Repository.Data.Entity
@@ -16,6 +17,6 @@ namespace Repository.Data.Entity
         public string ProductItemId { get; set; }
         [ForeignKey(nameof(ProductItemId))]
         public ProductItem ProductItem { get; set; }
-
+        public ProductItemTypeEnum? ConsignmentItemType { get; set; }
     }
 }
