@@ -1,14 +1,10 @@
-﻿using Repository.Data.Entity.Enum;
-using Repository.Data.Entity;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace Repository.Model.Consignment
 {
     public class CreateConsignmentItemRequestModel
     {
         public string Name { get; set; }
-        public decimal Price { get; set; }
 
         public string Origin { get; set; }
 
@@ -32,12 +28,6 @@ namespace Repository.Model.Consignment
 
         public string ImageUrl { get; set; }
 
-        public int Quantity { get; set; } = 1;
-
-        public string Type { get; set; } = "Approved";
-
         public string CategoryId { get; set; }
-
-        public ProductItemTypeEnum ProductItemType { get; set; }
     }
 }

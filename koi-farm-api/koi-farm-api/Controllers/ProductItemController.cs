@@ -8,6 +8,7 @@ using Repository.Model.ProductItem;
 using Repository.Model.Review;
 using Repository.Repository;
 using Microsoft.AspNetCore.Authorization;
+using Repository.Data.Entity.Enum;
 
 namespace koi_farm_api.Controllers
 {
@@ -239,7 +240,6 @@ namespace koi_farm_api.Controllers
         private bool ValidateField(RequestCreateProductItemModel productItemModel)
         {
             if (string.IsNullOrEmpty(productItemModel.Name) ||
-                string.IsNullOrEmpty(productItemModel.Category) ||
                 string.IsNullOrEmpty(productItemModel.Origin) ||
                 string.IsNullOrEmpty(productItemModel.Sex) ||
                 string.IsNullOrEmpty(productItemModel.Size) ||
@@ -286,7 +286,10 @@ namespace koi_farm_api.Controllers
 
             productExists.Quantity += productItemModel.Quantity;
 
+
             var productItem = _mapper.Map<ProductItem>(productItemModel);
+            productItem.ProductItemType = ProductItemTypeEnum.Shop;
+
             _unitOfWork.ProductItemRepository.Create(productItem);
             _unitOfWork.CategoryRepository.Update(productExists);
 
