@@ -349,7 +349,13 @@ namespace koi_farm_api.Controllers
         [HttpGet("{orderId}")]
         public IActionResult GetOrderById(string orderId)
         {
-            var order = _unitOfWork.OrderRepository.GetSingle(o => o.Id == orderId, o => o.Items);
+            // Fetch the order with related items, ProductItem, and ConsignmentItem
+            var order = _unitOfWork.OrderRepository.GetSingle(
+                o => o.Id == orderId,
+                o => o.Items.Select(i => i.ProductItem),
+                o => o.Items.Select(i => i.ConsignmentItem)
+            );
+
             if (order == null)
             {
                 return NotFound(new ResponseModel
@@ -359,30 +365,33 @@ namespace koi_farm_api.Controllers
                 });
             }
 
+            // Format the response
+            var response = new OrderResponseModel
+            {
+                OrderId = order.Id,
+                Total = order.Total,
+                Status = order.Status,
+                UserId = order.UserId,
+                StaffId = order.StaffId,
+                Address = order.Address,
+                CreatedTime = order.CreatedTime,
+                IsDelivered = order.IsDelivered,
+                Items = order.Items.Select(item => new OrderItemResponseModel
+                {
+                    ProductItemId = item.ProductItemId,
+                    Quantity = item.Quantity,
+                    Price = item.ProductItem?.Price ?? (item.ConsignmentItem?.Fee ?? 25000), // Use Fee for Healthcare
+                    BatchId = item.ProductItem?.BatchId
+                }).ToList()
+            };
+
             return Ok(new ResponseModel
             {
                 StatusCode = 200,
-                Data = new OrderResponseModel
-                {
-                    OrderId = order.Id,
-                    Total = order.Total,
-                    Status = order.Status,
-                    UserId = order.UserId,
-                    StaffId = order.StaffId,
-                    Address = order.Address,
-                    ConsignmentId = order.ConsignmentId,
-                    CreatedTime = order.CreatedTime,
-                    IsDelivered = order.IsDelivered,
-                    Items = order.Items.Select(item => new OrderItemResponseModel
-                    {
-                        ProductItemId = item.ProductItemId,
-                        Quantity = item.Quantity,
-                        Price = _unitOfWork.ProductItemRepository.GetById(item.ProductItemId)?.Price ?? 25000,
-                        BatchId = _unitOfWork.ProductItemRepository.GetById(item.ProductItemId).BatchId
-                    }).ToList()
-                }
+                Data = response
             });
         }
+
 
         // Get All Orders for a User Endpoint
         [HttpGet("user")]
@@ -398,7 +407,13 @@ namespace koi_farm_api.Controllers
                 });
             }
 
-            var orders = _unitOfWork.OrderRepository.Get(o => o.UserId == userId, o => o.Items).ToList();
+            // Fetch orders with their related items, ProductItems, and ConsignmentItems
+            var orders = _unitOfWork.OrderRepository.Get(
+                o => o.UserId == userId,
+                o => o.Items.Select(i => i.ProductItem),
+                o => o.Items.Select(i => i.ConsignmentItem)
+            ).ToList();
+
             if (!orders.Any())
             {
                 return NotFound(new ResponseModel
@@ -408,30 +423,33 @@ namespace koi_farm_api.Controllers
                 });
             }
 
+            // Build the response
+            var response = orders.Select(order => new OrderResponseModel
+            {
+                OrderId = order.Id,
+                Total = order.Total,
+                Status = order.Status,
+                UserId = order.UserId,
+                StaffId = order.StaffId,
+                Address = order.Address,
+                CreatedTime = order.CreatedTime,
+                IsDelivered = order.IsDelivered,
+                Items = order.Items.Select(item => new OrderItemResponseModel
+                {
+                    ProductItemId = item.ProductItemId,
+                    Quantity = item.Quantity,
+                    Price = item.ProductItem?.Price ?? (item.ConsignmentItem?.Fee ?? 25000), // Handle healthcare and missing items
+                    BatchId = item.ProductItem?.BatchId
+                }).ToList()
+            }).ToList();
+
             return Ok(new ResponseModel
             {
                 StatusCode = 200,
-                Data = orders.Select(order => new OrderResponseModel
-                {
-                    OrderId = order.Id,
-                    Total = order.Total,
-                    Status = order.Status,
-                    UserId = order.UserId,
-                    StaffId = order.StaffId,
-                    Address = order.Address,
-                    ConsignmentId = order.ConsignmentId,
-                    CreatedTime = order.CreatedTime,
-                    IsDelivered = order.IsDelivered,
-                    Items = order.Items.Select(item => new OrderItemResponseModel
-                    {
-                        ProductItemId = item.ProductItemId,
-                        Quantity = item.Quantity,
-                        Price = _unitOfWork.ProductItemRepository.GetById(item.ProductItemId).Price,
-                        BatchId = _unitOfWork.ProductItemRepository.GetById(item.ProductItemId).BatchId
-                    }).ToList()
-                }).ToList()
+                Data = response
             });
         }
+
 
         // Update Order Status Endpoint
         [HttpPut("update-order-status/{orderId}")]

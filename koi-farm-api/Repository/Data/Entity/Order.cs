@@ -1,42 +1,32 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Repository.Data.Entity;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Repository.Data.Entity
+[Table("Order")]
+public class Order : Entity
 {
-    [Table("Order")]
-    public class Order : Entity
-    {
-        public decimal Total { get; set; }
-        public string Status { get; set; }
+    public decimal Total { get; set; }
+    public string Status { get; set; } // e.g., "Pending", "Completed"
 
-        // Foreign key for the user who placed the order
-        public string UserId { get; set; }
-        [ForeignKey("UserId")]
-        public User User { get; set; }
+    // Foreign key for the user who placed the order
+    public string UserId { get; set; }
+    [ForeignKey("UserId")]
+    public User User { get; set; }
 
-        // Foreign key for the staff who processed the order
-        public string? StaffId { get; set; }
-        [ForeignKey("StaffId")]
-        public User? Staff { get; set; }
+    // Foreign key for the staff who processed the order
+    public string? StaffId { get; set; }
+    [ForeignKey("StaffId")]
+    public User? Staff { get; set; }
 
-        public string? PromotionId { get; set; }
-        [ForeignKey(nameof(PromotionId))]
-        public Promotion? Promotion { get; set; }
+    public string? PromotionId { get; set; }
+    [ForeignKey(nameof(PromotionId))]
+    public Promotion? Promotion { get; set; }
 
-        [MaxLength(200)]
-        public string? Address { get; set; }
-        public bool? IsDelivered { get; set; }
+    [MaxLength(200)]
+    public string? Address { get; set; } // Default to user's address
 
-        // Link to consignment if the order is generated from one
-        public string? ConsignmentId { get; set; }
-        [ForeignKey(nameof(ConsignmentId))]
-        public Consignment? Consignment { get; set; }
+    public bool? IsDelivered { get; set; }
 
-        public ICollection<OrderItem> Items { get; set; }
-    }
+    // Navigation property for OrderItems
+    public ICollection<OrderItem> Items { get; set; }
 }
