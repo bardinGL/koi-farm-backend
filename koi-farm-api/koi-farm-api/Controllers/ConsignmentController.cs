@@ -27,16 +27,22 @@ namespace koi_farm_api.Controllers
         [HttpGet("get-all-consignments")]
         public IActionResult GetAllConsignments()
         {
-            var consignments = _unitOfWork.ConsignmentRepository.GetAll().ToList();
+            // Fetch consignments with their related items using includeProperties
+            var consignments = _unitOfWork.ConsignmentRepository
+                .Get(includeProperties: c => c.Items)
+                .ToList();
+
+            // Check if there are no consignments
             if (!consignments.Any())
             {
                 return NotFound(new ResponseModel
                 {
-                    StatusCode = 404,
-                    MessageError = "No Consignment was found"
+                    StatusCode = StatusCodes.Status404NotFound,
+                    MessageError = "No consignments found."
                 });
             }
 
+            // Format the response
             var response = consignments.Select(consignment => new
             {
                 ConsignmentId = consignment.Id,
@@ -45,45 +51,66 @@ namespace koi_farm_api.Controllers
                 Items = consignment.Items.Select(item => new
                 {
                     ConsignmentItemId = item.Id,
-                    ConsignmentItemType = item.ProductItem.ProductItemType,
+                    ConsignmentItemType = item.ProductItem?.ProductItemType?.ToString() ?? "Unknown",
                     ConsignmentItemStatus = item.Status
                 }).ToList()
             }).ToList();
 
             return Ok(new ResponseModel
             {
-                StatusCode = 200,
+                StatusCode = StatusCodes.Status200OK,
                 Data = response
             });
         }
+
 
 
         [HttpGet("get-consignment-items-by-productitemtype/{productitemtype}")]
         public IActionResult GetConsignmentitemsByProductItemsType(string productitemtype)
         {
-            var consignments = _unitOfWork.ConsignmentItemRepository.Get(c => c.ProductItem.ProductItemType.Equals(productitemtype)).ToList();
-            if (!consignments.Any())
+            // Parse the provided productitemtype into the enum
+            if (!Enum.TryParse(productitemtype, true, out ProductItemTypeEnum productItemTypeEnum))
+            {
+                return BadRequest(new ResponseModel
+                {
+                    StatusCode = StatusCodes.Status400BadRequest,
+                    MessageError = "Invalid product item type provided."
+                });
+            }
+
+            // Fetch consignment items filtered by ProductItemType with related ProductItem included
+            var consignmentItems = _unitOfWork.ConsignmentItemRepository
+                .Get(c => c.ProductItem.ProductItemType == productItemTypeEnum,
+                     includeProperties: ci => ci.ProductItem)
+                .ToList();
+
+            // Check if there are no matching consignment items
+            if (!consignmentItems.Any())
             {
                 return NotFound(new ResponseModel
                 {
-                    StatusCode = 404,
-                    MessageError = "There is no Consignment Items of that type"
+                    StatusCode = StatusCodes.Status404NotFound,
+                    MessageError = "No consignment items found for the specified product item type."
                 });
             }
-            var response = consignments.Select(item => new
+
+            // Format the response
+            var response = consignmentItems.Select(item => new
             {
                 ConsignmentItemId = item.Id,
-                ProductItems = item.ProductItem,
-                ConsignmentItemStatus = item.Status
+                ProductItemName = item.ProductItem?.Name ?? "Unknown",
+                ProductItemType = item.ProductItem?.ProductItemType?.ToString() ?? "Unknown",
+                ConsignmentItemStatus = item.Status,
+                Fee = item.Fee
             }).ToList();
+
             return Ok(new ResponseModel
             {
-                StatusCode = 200,
+                StatusCode = StatusCodes.Status200OK,
                 Data = response
             });
-            return Ok();
-
         }
+
 
         [HttpGet("get-user-consignment-items")]
         public IActionResult GetUserConsignmentItems()
@@ -94,22 +121,26 @@ namespace koi_farm_api.Controllers
             {
                 return Unauthorized(new ResponseModel
                 {
-                    StatusCode = 401,
+                    StatusCode = StatusCodes.Status401Unauthorized,
                     MessageError = "Unauthorized: UserID is missing from token."
                 });
             }
 
-            // Query the database for consignment items created by the user
+            // Fetch consignment items for the user, including related ProductItem and Consignment
             var userConsignmentItems = _unitOfWork.ConsignmentItemRepository
-                .Get(ci => ci.Consignment.UserId == userId)
+                .Get(
+                    ci => ci.Consignment.UserId == userId,
+                    ci => ci.ProductItem,
+                    ci => ci.Consignment
+                )
                 .ToList();
 
-            // Check if the result is empty
+            // Check if there are no matching consignment items
             if (!userConsignmentItems.Any())
             {
                 return NotFound(new ResponseModel
                 {
-                    StatusCode = 404,
+                    StatusCode = StatusCodes.Status404NotFound,
                     MessageError = "No consignment items found for the current user."
                 });
             }
@@ -118,8 +149,8 @@ namespace koi_farm_api.Controllers
             var response = userConsignmentItems.Select(item => new
             {
                 ConsignmentItemId = item.Id,
-                ProductItemName = item.ProductItem.Name,
-                ProductItemType = item.ProductItem.ProductItemType,
+                ProductItemName = item.ProductItem?.Name ?? "Unknown",
+                ProductItemType = item.ProductItem?.ProductItemType?.ToString() ?? "Unknown",
                 ConsignmentItemStatus = item.Status,
                 Fee = item.Fee,
                 CreatedTime = item.CreatedTime
@@ -127,10 +158,12 @@ namespace koi_farm_api.Controllers
 
             return Ok(new ResponseModel
             {
-                StatusCode = 200,
+                StatusCode = StatusCodes.Status200OK,
                 Data = response
             });
         }
+
+
 
         [HttpPost("create-consignmentitem")]
         public IActionResult CreateConsignmentItem([FromBody] CreateConsignmentItemRequestModel createModel, decimal? salePrice = null)
@@ -403,6 +436,150 @@ namespace koi_farm_api.Controllers
         }
 
 
+        [HttpPost("checkout-healthcare/{productItemId}")]
+        public IActionResult CheckoutHealthcare(string productItemId)
+        {
+            // Validate ProductItemId
+            if (string.IsNullOrEmpty(productItemId))
+            {
+                return BadRequest(new ResponseModel
+                {
+                    StatusCode = 400,
+                    MessageError = "ProductItemId cannot be null or empty."
+                });
+            }
+
+            // Retrieve ProductItem
+            var productItem = _unitOfWork.ProductItemRepository.GetById(productItemId);
+            if (productItem == null || productItem.ProductItemType != ProductItemTypeEnum.Healthcare)
+            {
+                return BadRequest(new ResponseModel
+                {
+                    StatusCode = 400,
+                    MessageError = "Invalid ProductItem. Ensure it exists and is of type 'Healthcare'."
+                });
+            }
+
+            // Retrieve associated ConsignmentItem
+            var consignmentItem = _unitOfWork.ConsignmentItemRepository
+                .Get(ci => ci.ProductItemId == productItemId)
+                .FirstOrDefault();
+
+            if (consignmentItem == null || consignmentItem.Fee <= 0)
+            {
+                return NotFound(new ResponseModel
+                {
+                    StatusCode = 404,
+                    MessageError = "Valid ConsignmentItem for the specified ProductItem not found."
+                });
+            }
+
+            // Calculate total based on Fee and number of days
+            var currentTime = DateTime.UtcNow;
+            var createdTime = consignmentItem.CreatedTime.UtcDateTime;
+            var totalDays = Math.Ceiling((currentTime - createdTime).TotalHours / 24);
+            var total = consignmentItem.Fee * (decimal)totalDays;
+
+            // Retrieve user and address
+            var userId = HttpContext.User.FindFirst("UserID")?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new ResponseModel
+                {
+                    StatusCode = 401,
+                    MessageError = "Unauthorized: UserID is missing from token."
+                });
+            }
+
+            var user = _unitOfWork.UserRepository.GetById(userId);
+            if (user == null || string.IsNullOrEmpty(user.Address))
+            {
+                return NotFound(new ResponseModel
+                {
+                    StatusCode = 404,
+                    MessageError = "User not found or missing address."
+                });
+            }
+
+            // Create the Order
+            var order = new Order
+            {
+                UserId = userId,
+                Total = total,
+                Status = "Pending",
+                Address = user.Address,
+                ConsignmentId = consignmentItem.Id, // Link to the specific ConsignmentItem
+                Items = new List<OrderItem>
+        {
+            new OrderItem
+            {
+                ProductItemId = productItemId,
+                Quantity = 1,
+                ConsignmentItemId = consignmentItem.Id // Link the OrderItem to the ConsignmentItem
+            }
+        }
+            };
+
+            _unitOfWork.OrderRepository.Create(order);
+
+            // Save changes
+            try
+            {
+                _unitOfWork.SaveChange();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ResponseModel
+                {
+                    StatusCode = 500,
+                    MessageError = $"Failed to create the order: {ex.Message}"
+                });
+            }
+
+            // Send confirmation email
+            var emailContent = new StringBuilder();
+            emailContent.AppendLine($"<p>Dear {user.Name},</p>");
+            emailContent.AppendLine($"<p>Your Healthcare checkout for the product <strong>{productItem.Name}</strong> has been successfully completed.</p>");
+            emailContent.AppendLine($"<p>Total fee for {totalDays} day(s): <strong>{total:C}</strong></p>");
+            emailContent.AppendLine("<p>Thank you for using our service!</p>");
+            emailContent.AppendLine("<p>Best regards,</p>");
+            emailContent.AppendLine("<p>KoiShop</p>");
+
+            var emailModel = new SendMailModel
+            {
+                ReceiveAddress = user.Email,
+                Title = "Healthcare Checkout Confirmation",
+                Content = emailContent.ToString()
+            };
+
+            try
+            {
+                _emailService.SendMail(emailModel);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ResponseModel
+                {
+                    StatusCode = 500,
+                    MessageError = $"Failed to send confirmation email: {ex.Message}"
+                });
+            }
+
+            // Return successful response
+            return Ok(new ResponseModel
+            {
+                StatusCode = 201,
+                Data = new
+                {
+                    OrderId = order.Id,
+                    Total = order.Total,
+                    Days = totalDays,
+                    ProductItemName = productItem.Name,
+                    UserName = user.Name,
+                    Address = user.Address
+                }
+            });
+        }
 
 
 
