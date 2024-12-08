@@ -33,9 +33,9 @@ namespace Repository.Data.Entity
         public bool? IsDelivered { get; set; }
 
         // Link to consignment if the order is generated from one
-        public string? ConsignmentItemId { get; set; }
-        [ForeignKey(nameof(ConsignmentItemId))]
-        public ConsignmentItems? ConsignmentItems { get; set; }
+        public string? ConsignmentId { get; set; }
+        [ForeignKey(nameof(ConsignmentId))]
+        public Consignment? Consignment { get; set; }
 
         public ICollection<OrderItem> Items { get; set; }
     }
