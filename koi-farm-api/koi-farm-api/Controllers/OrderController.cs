@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Repository.Data.Entity;
+using Repository.Data.Entity.Enum;
 using Repository.EmailService;
 using Repository.Model;
 using Repository.Model.Email;
@@ -31,6 +32,122 @@ namespace koi_farm_api.Controllers
         {
             return User.FindFirst("UserID")?.Value;
         }
+
+        [HttpPost("notify-sellers/{orderId}")]
+        public IActionResult NotifySellersForOrder(string orderId)
+        {
+            // Validate the OrderId
+            if (string.IsNullOrEmpty(orderId))
+            {
+                return BadRequest(new ResponseModel
+                {
+                    StatusCode = 400,
+                    MessageError = "OrderId cannot be null or empty."
+                });
+            }
+
+            // Retrieve the Order
+            var order = _unitOfWork.OrderRepository.Get(o => o.Id == orderId, o => o.Items).FirstOrDefault();
+            if (order == null)
+            {
+                return NotFound(new ResponseModel
+                {
+                    StatusCode = 404,
+                    MessageError = $"Order with ID {orderId} not found."
+                });
+            }
+
+            var notifications = new List<string>();
+            var errors = new List<string>();
+
+            // Iterate through OrderItems
+            foreach (var orderItem in order.Items)
+            {
+                // Retrieve the ProductItem
+                var productItem = _unitOfWork.ProductItemRepository.GetById(orderItem.ProductItemId);
+                if (productItem == null)
+                {
+                    errors.Add($"ProductItem with ID {orderItem.ProductItemId} not found.");
+                    continue;
+                }
+
+                // Check if ProductItemType is ShopUser
+                if (productItem.ProductItemType != ProductItemTypeEnum.ShopUser)
+                {
+                    continue; // Skip non-ShopUser products
+                }
+
+                // Retrieve the ConsignmentItem associated with this ProductItem
+                var consignmentItem = _unitOfWork.ConsignmentItemRepository
+                    .Get(ci => ci.ProductItemId == orderItem.ProductItemId)
+                    .FirstOrDefault();
+
+                if (consignmentItem == null)
+                {
+                    errors.Add($"ConsignmentItem associated with ProductItem ID {orderItem.ProductItemId} not found.");
+                    continue;
+                }
+
+                // Retrieve the Consignment associated with this ConsignmentItem
+                var consignment = _unitOfWork.ConsignmentRepository
+                    .Get(c => c.Id == consignmentItem.ConsignmentId)
+                    .FirstOrDefault();
+
+                if (consignment == null)
+                {
+                    errors.Add($"Consignment associated with ConsignmentItem ID {consignmentItem.Id} not found.");
+                    continue;
+                }
+
+                // Retrieve the User associated with this Consignment
+                var user = _unitOfWork.UserRepository.GetById(consignment.UserId);
+                if (user == null)
+                {
+                    errors.Add($"User associated with Consignment ID {consignment.Id} not found.");
+                    continue;
+                }
+
+                // Create email content
+                var emailContent = new StringBuilder();
+                emailContent.AppendLine($"<p>Dear {user.Name},</p>");
+                emailContent.AppendLine($"<p>Your product, <strong>{productItem.Name}</strong>, has been sold through our system.</p>");
+                emailContent.AppendLine("<p>You can now retrieve the funds from your account.</p>");
+                emailContent.AppendLine("<br>");
+                emailContent.AppendLine("<p>Thank you for using our platform!</p>");
+                emailContent.AppendLine("<p>Best regards,</p>");
+                emailContent.AppendLine("<p>KoiShop</p>");
+
+                // Create and send email
+                var emailModel = new SendMailModel
+                {
+                    ReceiveAddress = user.Email,
+                    Title = "Your Product Has Been Sold!",
+                    Content = emailContent.ToString()
+                };
+
+                try
+                {
+                    _emailService.SendMail(emailModel);
+                    notifications.Add($"Notification sent successfully to {user.Email} for ProductItem ID {orderItem.ProductItemId}.");
+                }
+                catch (Exception ex)
+                {
+                    errors.Add($"Failed to send email notification to {user.Email}: {ex.Message}");
+                }
+            }
+
+            // Return response with successes and errors
+            return Ok(new ResponseModel
+            {
+                StatusCode = 200,
+                Data = new
+                {
+                    Notifications = notifications,
+                    Errors = errors
+                }
+            });
+        }
+
 
         [HttpPost("create")]
         public IActionResult CreateOrder([FromBody] CreateOrderRequestModel model)
