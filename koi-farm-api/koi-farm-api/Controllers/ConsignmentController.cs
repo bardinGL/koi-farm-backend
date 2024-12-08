@@ -132,10 +132,39 @@ namespace koi_farm_api.Controllers
             });
         }
 
-
         [HttpPost("create-consignmentitem")]
         public IActionResult CreateConsignmentItem([FromBody] CreateConsignmentItemRequestModel createModel, decimal? salePrice = null)
         {
+            // Validate input model
+            if (createModel == null)
+            {
+                return BadRequest(new ResponseModel
+                {
+                    StatusCode = 400,
+                    MessageError = "Invalid input. CreateConsignmentItemRequestModel cannot be null."
+                });
+            }
+
+            // Validate CategoryId
+            if (string.IsNullOrEmpty(createModel.CategoryId))
+            {
+                return BadRequest(new ResponseModel
+                {
+                    StatusCode = 400,
+                    MessageError = "CategoryId is required."
+                });
+            }
+
+            var category = _unitOfWork.CategoryRepository.GetById(createModel.CategoryId);
+            if (category == null)
+            {
+                return NotFound(new ResponseModel
+                {
+                    StatusCode = 404,
+                    MessageError = $"Category with ID {createModel.CategoryId} not found."
+                });
+            }
+
             // Extract UserID from token claims
             var userId = HttpContext.User.FindFirst("UserID")?.Value;
             if (string.IsNullOrEmpty(userId))
@@ -148,7 +177,7 @@ namespace koi_farm_api.Controllers
             }
 
             // Check if user exists
-            var user = _unitOfWork.UserRepository.Get(u => u.Id == userId).FirstOrDefault();
+            var user = _unitOfWork.UserRepository.GetById(userId);
             if (user == null)
             {
                 return NotFound(new ResponseModel
@@ -158,16 +187,22 @@ namespace koi_farm_api.Controllers
                 });
             }
 
-            // Check if consignment already exists for the user
+            // Get or create consignment for the user
             var consignment = _unitOfWork.ConsignmentRepository.Get(c => c.UserId == userId).FirstOrDefault();
             if (consignment == null)
             {
                 consignment = new Consignment
                 {
                     UserId = userId,
-                    Items = new List<ConsignmentItems>()
+                    Items = new List<ConsignmentItems>() // Initialize Items to avoid null reference
                 };
+
                 _unitOfWork.ConsignmentRepository.Create(consignment);
+                _unitOfWork.SaveChange(); // Save to ensure Consignment.Id is generated
+            }
+            else if (consignment.Items == null)
+            {
+                consignment.Items = new List<ConsignmentItems>(); // Ensure Items is initialized
             }
 
             // Determine product type and properties
@@ -175,10 +210,14 @@ namespace koi_farm_api.Controllers
                 ? ProductItemTypeEnum.ShopUser
                 : ProductItemTypeEnum.Healthcare;
 
+            var productPrice = salePrice ?? 0; // Default price for healthcare
+            const decimal defaultFee = 25000; // Default fee for consignment items
+
+            // Create product item
             var productItem = new ProductItem
             {
                 Name = createModel.Name,
-                Price = salePrice ?? 0, // 0 for healthcare
+                Price = productPrice,
                 Origin = createModel.Origin,
                 Sex = createModel.Sex,
                 Age = createModel.Age,
@@ -190,20 +229,26 @@ namespace koi_farm_api.Controllers
                 MineralContent = createModel.MineralContent,
                 PH = createModel.PH,
                 ImageUrl = createModel.ImageUrl,
-                Type = createModel.Type,
-                ProductItemType = productType
+                ProductItemType = productType,
+                CategoryId = createModel.CategoryId,
+                Quantity = 1, // Ensure Quantity is always 1
+                Type = "Approved" // Ensure Type is always "Approved"
             };
+
             _unitOfWork.ProductItemRepository.Create(productItem);
 
             // Create consignment item and link to consignment
             var consignmentItem = new ConsignmentItems
             {
                 Name = productItem.Name,
-                Fee = 25000, // Fee is 25,000
+                Fee = defaultFee,
                 Status = "Pending",
                 ProductItemId = productItem.Id,
-                ConsignmentId = consignment.Id
+                ConsignmentId = consignment.Id,
+                ConsignmentItemType = productType // Link the type to the product item
             };
+
+            // Add consignment item to consignment
             consignment.Items.Add(consignmentItem);
             _unitOfWork.ConsignmentItemRepository.Create(consignmentItem);
 
@@ -215,7 +260,7 @@ namespace koi_farm_api.Controllers
             {
                 ProductItemId = productItem.Id,
                 ProductItemName = productItem.Name,
-                ProductItemType = productType,
+                ProductItemType = productType.ToString(),
                 Fee = consignmentItem.Fee,
                 ConsignmentId = consignment.Id,
                 ConsignmentItemId = consignmentItem.Id
@@ -227,6 +272,9 @@ namespace koi_farm_api.Controllers
                 Data = response
             });
         }
+
+
+
 
         [HttpPut("update-consignment-item/{consignmentItemId}")]
         public IActionResult UpdateConsignmentItem(string consignmentItemId, [FromBody] UpdateConsignmentItemRequestModel updateModel)

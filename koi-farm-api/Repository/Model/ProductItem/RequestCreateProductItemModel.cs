@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Repository.Data.Entity.Enum;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,8 +11,6 @@ namespace Repository.Model.ProductItem
     {
         public string Name { get; set; }
         public decimal Price { get; set; }
-
-        public string Category { get; set; }
 
         public string Origin { get; set; }
 
@@ -40,5 +39,7 @@ namespace Repository.Model.ProductItem
         public string Type { get; set; }
 
         public string CategoryId { get; set; }
+
+        public ProductItemTypeEnum TypeEnum { get; set; } = ProductItemTypeEnum.Shop;
     }
 }
