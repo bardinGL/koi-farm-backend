@@ -74,7 +74,7 @@ namespace koi_farm_api.Controllers
                             Email = user.Email,
                             Address = user.Address,
                             Phone = user.Phone,
-                            RoleId = user.RoleId
+                            RoleId = "User",
                         }
                     }
                 });
@@ -91,7 +91,7 @@ namespace koi_farm_api.Controllers
             if (_memoryCache.Get(token) != null)
             {
                 string email = (string)_memoryCache.Get(token);
-                var user = _unitOfWork.UserRepository.GetAll().FirstOrDefault(x => x.Email == email);
+                var user = _unitOfWork.UserRepository.GetSingle(x => x.Email == email, includeProperties: q => q.Role);
                 user.Status = "Active";
                 _unitOfWork.UserRepository.Update(user);
                 _unitOfWork.SaveChange();
@@ -143,8 +143,8 @@ namespace koi_farm_api.Controllers
             _emailService.SendMail(new SendMailModel
             {
                 ReceiveAddress = signUpModel.Email,
-                Title = "Password Reset Request",
-                Content = $"Click the link to reset your password: {resetUrl}"
+                Title = "Email Sign Up Success",
+                Content = $"Click the link to verify your password: {resetUrl}"
             });
             string cachekey = token.ToString();
             string cachevalue = signUpModel.Email;
@@ -161,7 +161,7 @@ namespace koi_farm_api.Controllers
             return Ok(new ResponseModel
             {
                 StatusCode = 200,
-                MessageError = "Successfully request password reset"
+                MessageError = "Successfully Sign Up Email"
             });
             
         }
