@@ -162,7 +162,7 @@ namespace koi_farm_api.Controllers
                 });
             }
 
-            //Check if there is a valid promotion
+            // Check if there is a valid promotion
             var promotion = _unitOfWork.PromotionRepository.GetAll().FirstOrDefault(p => p.Code == model.PromotionCode);
             bool isPromotionValid = promotion != null &&
                                     ((promotion.Type == "Percentage" && promotion.Amount > 0 && promotion.Amount <= 100) ||
@@ -210,7 +210,16 @@ namespace koi_farm_api.Controllers
 
                 // Reduce ProductItem quantity
                 productItem.Quantity -= orderItem.Quantity;
-                _unitOfWork.ProductItemRepository.Update(productItem);
+
+                if (productItem.Quantity <= 0)
+                {
+                    // Soft-delete ProductItem when quantity reaches 0
+                    _unitOfWork.ProductItemRepository.Delete(productItem);
+                }
+                else
+                {
+                    _unitOfWork.ProductItemRepository.Update(productItem);
+                }
 
                 // Reduce Product quantity
                 var product = _unitOfWork.CategoryRepository.GetById(productItem.CategoryId);
@@ -267,7 +276,7 @@ namespace koi_farm_api.Controllers
                 });
             }
 
-            //Send mail with certificate
+            // Send mail with certificate
             SendOrderConfirmationEmailWithCertificates(order);
 
             return Ok(new ResponseModel
@@ -286,12 +295,13 @@ namespace koi_farm_api.Controllers
                     {
                         ProductItemId = item.ProductItemId,
                         Quantity = item.Quantity,
-                        Price = _unitOfWork.ProductItemRepository.GetById(item.ProductItemId).Price,
-                        BatchId = _unitOfWork.ProductItemRepository.GetById(item.ProductItemId).BatchId
+                        Price = _unitOfWork.ProductItemRepository.GetById(item.ProductItemId)?.Price ?? 0,
+                        BatchId = _unitOfWork.ProductItemRepository.GetById(item.ProductItemId)?.BatchId
                     }).ToList()
                 }
             });
         }
+
 
         private void SendOrderConfirmationEmailWithCertificates(Order order)
         {
@@ -517,7 +527,11 @@ namespace koi_farm_api.Controllers
         {
             try
             {
-                var orders = _unitOfWork.OrderRepository.Get(includeProperties: o => o.Items).ToList();
+                // Fetch all orders with related items, ProductItems, and ConsignmentItems
+                var orders = _unitOfWork.OrderRepository.Get(
+                    includeProperties: o => o.Items.Select(i => i.ProductItem)
+                ).ToList();
+
                 if (!orders.Any())
                 {
                     return NotFound(new ResponseModel
@@ -527,34 +541,37 @@ namespace koi_farm_api.Controllers
                     });
                 }
 
+                // Prepare the response
+                var response = orders.Select(order => new OrderResponseModel
+                {
+                    OrderId = order.Id,
+                    Total = order.Total,
+                    Status = order.Status,
+                    UserId = order.UserId,
+                    StaffId = order.StaffId,
+                    Address = order.Address,
+                    CreatedTime = order.CreatedTime,
+                    IsDelivered = order.IsDelivered,
+                    Items = order.Items.Select(item => new OrderItemResponseModel
+                    {
+                        ProductItemId = item.ProductItemId,
+                        Quantity = item.Quantity,
+                        Price = item.ProductItem?.Price ?? (item.ConsignmentItem?.Fee ?? 0),
+                        BatchId = item.ProductItem?.BatchId
+                    }).ToList()
+                }).ToList();
+
                 return Ok(new ResponseModel
                 {
                     StatusCode = 200,
-                    Data = orders.Select(order => new OrderResponseModel
-                    {
-                        OrderId = order.Id,
-                        Total = order.Total,
-                        Status = order.Status,
-                        UserId = order.UserId,
-                        StaffId = order.StaffId,
-                        Address = order.Address,
-                        ConsignmentId = order.ConsignmentId,
-                        CreatedTime = order.CreatedTime,
-                        IsDelivered = order.IsDelivered,
-                        Items = order.Items.Select(item => new OrderItemResponseModel
-                        {
-                            ProductItemId = item.ProductItemId,
-                            Quantity = item.Quantity,
-                            Price = _unitOfWork.ProductItemRepository.GetById(item.ProductItemId)?.Price ?? 0,
-                            BatchId = _unitOfWork.ProductItemRepository.GetById(item.ProductItemId).BatchId
-                        }).ToList()
-                    }).ToList()
+                    Data = response
                 });
             }
             catch (Exception ex)
             {
-                // Log the exception
+                // Log the exception for debugging purposes
                 Console.WriteLine($"Error in GetAllOrders: {ex.Message}");
+
                 return StatusCode(500, new ResponseModel
                 {
                     StatusCode = 500,
@@ -564,34 +581,42 @@ namespace koi_farm_api.Controllers
         }
 
 
+
         // Get Orders by Status Endpoint
         [HttpGet("get-orders-by-status/{status}")]
         public IActionResult GetOrdersByStatus(string status)
         {
-            var validStatuses = new[] { "Pending", "Delivering", "Completed", "Cancelled" };
-            if (!validStatuses.Contains(status))
+            try
             {
-                return BadRequest(new ResponseModel
+                // Validate the provided status
+                var validStatuses = new[] { "Pending", "Delivering", "Completed", "Cancelled" };
+                if (!validStatuses.Contains(status))
                 {
-                    StatusCode = 400,
-                    MessageError = "Invalid order status."
-                });
-            }
+                    return BadRequest(new ResponseModel
+                    {
+                        StatusCode = 400,
+                        MessageError = "Invalid order status."
+                    });
+                }
 
-            var orders = _unitOfWork.OrderRepository.Get(o => o.Status == status, o => o.Items).ToList();
-            if (!orders.Any())
-            {
-                return NotFound(new ResponseModel
+                // Fetch orders with the given status, including related items and product data
+                var orders = _unitOfWork.OrderRepository.Get(
+                    o => o.Status == status,
+                    o => o.Items.Select(i => i.ProductItem)
+                ).ToList();
+
+                // Check if no orders were found
+                if (!orders.Any())
                 {
-                    StatusCode = 404,
-                    MessageError = $"No orders found with status '{status}'."
-                });
-            }
+                    return NotFound(new ResponseModel
+                    {
+                        StatusCode = 404,
+                        MessageError = $"No orders found with status '{status}'."
+                    });
+                }
 
-            return Ok(new ResponseModel
-            {
-                StatusCode = 200,
-                Data = orders.Select(order => new OrderResponseModel
+                // Prepare the response
+                var response = orders.Select(order => new OrderResponseModel
                 {
                     OrderId = order.Id,
                     Total = order.Total,
@@ -599,60 +624,80 @@ namespace koi_farm_api.Controllers
                     UserId = order.UserId,
                     StaffId = order.StaffId,
                     Address = order.Address,
-                    ConsignmentId = order.ConsignmentId,
                     CreatedTime = order.CreatedTime,
                     IsDelivered = order.IsDelivered,
                     Items = order.Items.Select(item => new OrderItemResponseModel
                     {
                         ProductItemId = item.ProductItemId,
                         Quantity = item.Quantity,
-                        Price = _unitOfWork.ProductItemRepository.GetById(item.ProductItemId).Price,
-                        BatchId = _unitOfWork.ProductItemRepository.GetById(item.ProductItemId).BatchId
+                        Price = item.ProductItem?.Price ?? (item.ConsignmentItem?.Fee ?? 0),
+                        BatchId = item.ProductItem?.BatchId
                     }).ToList()
-                }).ToList()
-            });
+                }).ToList();
+
+                return Ok(new ResponseModel
+                {
+                    StatusCode = 200,
+                    Data = response
+                });
+            }
+            catch (Exception ex)
+            {
+                // Log the exception for debugging purposes
+                Console.WriteLine($"Error in GetOrdersByStatus: {ex.Message}");
+
+                return StatusCode(500, new ResponseModel
+                {
+                    StatusCode = 500,
+                    MessageError = "An error occurred while retrieving orders by status."
+                });
+            }
         }
+
 
         // Get Orders by Status for Current User Endpoint
         [HttpGet("user/get-orders-by-status/{status}")]
         public IActionResult GetOrdersByStatusOfUser(string status)
         {
-            var validStatuses = new[] { "Pending", "Delivering", "Completed", "Cancelled" };
-
-            if (!validStatuses.Contains(status))
+            try
             {
-                return BadRequest(new ResponseModel
+                var validStatuses = new[] { "Pending", "Delivering", "Completed", "Cancelled" };
+
+                if (!validStatuses.Contains(status))
                 {
-                    StatusCode = 400,
-                    MessageError = "Invalid order status."
-                });
-            }
+                    return BadRequest(new ResponseModel
+                    {
+                        StatusCode = 400,
+                        MessageError = "Invalid order status."
+                    });
+                }
 
-            var userId = GetUserIdFromClaims();
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new ResponseModel
+                var userId = GetUserIdFromClaims();
+                if (string.IsNullOrEmpty(userId))
                 {
-                    StatusCode = 401,
-                    MessageError = "Unauthorized. User ID not found in claims."
-                });
-            }
+                    return Unauthorized(new ResponseModel
+                    {
+                        StatusCode = 401,
+                        MessageError = "Unauthorized. User ID not found in claims."
+                    });
+                }
 
-            var orders = _unitOfWork.OrderRepository.Get(o => o.Status == status && o.UserId == userId, o => o.Items).ToList();
+                // Include related entities
+                var orders = _unitOfWork.OrderRepository.Get(
+                    o => o.Status == status && o.UserId == userId,
+                    o => o.Items.Select(i => i.ProductItem)
+                ).ToList();
 
-            if (!orders.Any())
-            {
-                return NotFound(new ResponseModel
+                if (!orders.Any())
                 {
-                    StatusCode = 404,
-                    MessageError = $"No orders found with status '{status}' for the current user."
-                });
-            }
+                    return NotFound(new ResponseModel
+                    {
+                        StatusCode = 404,
+                        MessageError = $"No orders found with status '{status}' for the current user."
+                    });
+                }
 
-            return Ok(new ResponseModel
-            {
-                StatusCode = 200,
-                Data = orders.Select(order => new OrderResponseModel
+                var response = orders.Select(order => new OrderResponseModel
                 {
                     OrderId = order.Id,
                     Total = order.Total,
@@ -660,19 +705,34 @@ namespace koi_farm_api.Controllers
                     UserId = order.UserId,
                     StaffId = order.StaffId,
                     Address = order.Address,
-                    ConsignmentId = order.ConsignmentId,
                     CreatedTime = order.CreatedTime,
                     IsDelivered = order.IsDelivered,
                     Items = order.Items.Select(item => new OrderItemResponseModel
                     {
                         ProductItemId = item.ProductItemId,
                         Quantity = item.Quantity,
-                        Price = _unitOfWork.ProductItemRepository.GetById(item.ProductItemId).Price,
-                        BatchId = _unitOfWork.ProductItemRepository.GetById(item.ProductItemId).BatchId
+                        Price = item.ProductItem?.Price ?? (item.ConsignmentItem?.Fee ?? 0),
+                        BatchId = item.ProductItem?.BatchId
                     }).ToList()
-                }).ToList()
-            });
+                }).ToList();
+
+                return Ok(new ResponseModel
+                {
+                    StatusCode = 200,
+                    Data = response
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetOrdersByStatusOfUser: {ex.Message}");
+                return StatusCode(500, new ResponseModel
+                {
+                    StatusCode = 500,
+                    MessageError = "An error occurred while retrieving orders by status for the current user."
+                });
+            }
         }
+
 
         // Cancel Order Endpoint
         [HttpPut("cancel-order/{orderId}")]
@@ -797,54 +857,71 @@ namespace koi_farm_api.Controllers
         [HttpGet("staff/get-assigned-orders")]
         public IActionResult GetOrdersAssignedToStaff()
         {
-            var staffId = GetUserIdFromClaims();
-
-            if (string.IsNullOrEmpty(staffId))
+            try
             {
-                return Unauthorized(new ResponseModel
+                var staffId = GetUserIdFromClaims();
+
+                if (string.IsNullOrEmpty(staffId))
                 {
-                    StatusCode = 401,
-                    MessageError = "Unauthorized. Staff ID not found in claims."
+                    return Unauthorized(new ResponseModel
+                    {
+                        StatusCode = 401,
+                        MessageError = "Unauthorized. Staff ID not found in claims."
+                    });
+                }
+
+                // Include related data for eager loading
+                var orders = _unitOfWork.OrderRepository.Get(
+                    o => o.StaffId == staffId,
+                    o => o.Items.Select(i => i.ProductItem)
+                ).ToList();
+
+                if (!orders.Any())
+                {
+                    return NotFound(new ResponseModel
+                    {
+                        StatusCode = 404,
+                        MessageError = "No orders found for the assigned staff."
+                    });
+                }
+
+                // Map the orders to response models
+                var responseOrders = orders.Select(order => new OrderResponseModel
+                {
+                    OrderId = order.Id,
+                    Total = order.Total,
+                    Status = order.Status,
+                    UserId = order.UserId,
+                    StaffId = order.StaffId,
+                    Address = order.Address,
+                    CreatedTime = order.CreatedTime,
+                    IsDelivered = order.IsDelivered,
+                    Items = order.Items.Select(item => new OrderItemResponseModel
+                    {
+                        ProductItemId = item.ProductItemId,
+                        Quantity = item.Quantity,
+                        Price = item.ProductItem?.Price ?? (item.ConsignmentItem?.Fee ?? 0),
+                        BatchId = item.ProductItem?.BatchId
+                    }).ToList()
+                }).ToList();
+
+                return Ok(new ResponseModel
+                {
+                    StatusCode = 200,
+                    Data = responseOrders
                 });
             }
-
-            var orders = _unitOfWork.OrderRepository.Get(o => o.StaffId == staffId, o => o.Items).ToList();
-
-            if (!orders.Any())
+            catch (Exception ex)
             {
-                return NotFound(new ResponseModel
+                Console.WriteLine($"Error in GetOrdersAssignedToStaff: {ex.Message}");
+                return StatusCode(500, new ResponseModel
                 {
-                    StatusCode = 404,
-                    MessageError = "No orders found for the assigned staff."
+                    StatusCode = 500,
+                    MessageError = "An error occurred while retrieving assigned orders."
                 });
             }
-
-            var responseOrders = orders.Select(order => new OrderResponseModel
-            {
-                OrderId = order.Id,
-                Total = order.Total,
-                Status = order.Status,
-                UserId = order.UserId,
-                StaffId = order.StaffId,
-                Address = order.Address,
-                ConsignmentId = order.ConsignmentId,
-                CreatedTime = order.CreatedTime,
-                IsDelivered = order.IsDelivered,
-                Items = order.Items.Select(item => new OrderItemResponseModel
-                {
-                    ProductItemId = item.ProductItemId,
-                    Quantity = item.Quantity,
-                    Price = _unitOfWork.ProductItemRepository.GetById(item.ProductItemId).Price,
-                    BatchId = _unitOfWork.ProductItemRepository.GetById(item.ProductItemId).BatchId
-                }).ToList()
-            }).ToList();
-
-            return Ok(new ResponseModel
-            {
-                StatusCode = 200,
-                Data = responseOrders
-            });
         }
+
 
         // Update IsDelivered Flag for Order
         [HttpPut("is-delivered/{orderId}")]

@@ -508,7 +508,6 @@ namespace koi_farm_api.Controllers
                 Total = total,
                 Status = "Pending",
                 Address = user.Address,
-                ConsignmentId = consignmentItem.Id, // Link to the specific ConsignmentItem
                 Items = new List<OrderItem>
         {
             new OrderItem
@@ -580,6 +579,7 @@ namespace koi_farm_api.Controllers
                 }
             });
         }
+
 
 
 

@@ -106,7 +106,7 @@ namespace koi_farm_api.Controllers
             }
 
             var orderId = response.OrderId;
-            var order = _unitOfWork.OrderRepository.GetById(orderId);
+            var order = _unitOfWork.OrderRepository.Get(o => o.Id == orderId, o => o.Items).FirstOrDefault();
 
             if (order == null)
             {
@@ -129,20 +129,15 @@ namespace koi_farm_api.Controllers
 
             if (response.Success)
             {
-                if (!string.IsNullOrEmpty(order.ConsignmentId))
-                {
-                    order.Status = "Completed";
-                }
-                else
-                {
-                    order.Status = "Pending";
-                }
+                // Check if any item in the order is linked to a ConsignmentItem
+                var hasConsignmentItem = order.Items.Any(item => item.ConsignmentItemId != null);
+                order.Status = hasConsignmentItem ? "Completed" : "Pending";
 
                 var payment = new Payment
                 {
                     Id = response.PaymentId,
                     Amount = order.Total,
-                    Status = (!string.IsNullOrEmpty(order.ConsignmentId)) ? "SuccessConsignment" : "Success",
+                    Status = hasConsignmentItem ? "SuccessConsignment" : "Success",
                     Method = response.PaymentMethod,
                     OrderId = order.Id
                 };
@@ -150,19 +145,19 @@ namespace koi_farm_api.Controllers
                 _unitOfWork.PaymentRepository.Create(payment);
                 _unitOfWork.OrderRepository.Update(order);
 
-                //Send confirmation mail
+                // Send confirmation mail
                 var emailRequest = new SendMailModel
                 {
                     ReceiveAddress = user.Email,
                     Title = "Xác Nhận Thanh Toán",
                     Content = $@"
-                    <p>Kính chào {user.Name},</p>
-                    <p>Cảm ơn quý khách đã mua hàng. Thanh toán cho Đơn hàng <strong>ID: {orderId}</strong> của quý khách đã thành công.</p>
-                    <p>Số giao dịch của quý khách: <strong>{payment.Id}</strong>.</p>
-                    <p>Số tiền: <strong>{order.Total.ToString("C0", new CultureInfo("vi-VN"))}</strong>.</p>
-                    <br>
-                    <p>Trân trọng,</p>
-                    <p>KoiShop</p>"
+            <p>Kính chào {user.Name},</p>
+            <p>Cảm ơn quý khách đã mua hàng. Thanh toán cho Đơn hàng <strong>ID: {orderId}</strong> của quý khách đã thành công.</p>
+            <p>Số giao dịch của quý khách: <strong>{payment.Id}</strong>.</p>
+            <p>Số tiền: <strong>{order.Total.ToString("C0", new CultureInfo("vi-VN"))}</strong>.</p>
+            <br>
+            <p>Trân trọng,</p>
+            <p>KoiShop</p>"
                 };
 
                 _emailService.SendMail(emailRequest);
@@ -172,18 +167,18 @@ namespace koi_farm_api.Controllers
                 order.Status = "Failed";
                 _unitOfWork.OrderRepository.Update(order);
 
-                //Send confirmation mail
+                // Send failure email
                 var emailRequest = new SendMailModel
                 {
                     ReceiveAddress = user.Email,
                     Title = "Thanh Toán Thất Bại",
                     Content = $@"
-                    <p>Kính chào {user.Name},</p>
-                    <p>Thanh toán cho Đơn hàng <strong>ID: {orderId}</strong> của quý khách đã thất bại.</p>
-                    <p>Quý khách có thể mua lại hoặc hủy đơn hàng này.</p>
-                    <br>
-                    <p>Trân trọng,</p>
-                    <p>KoiShop</p>"
+            <p>Kính chào {user.Name},</p>
+            <p>Thanh toán cho Đơn hàng <strong>ID: {orderId}</strong> của quý khách đã thất bại.</p>
+            <p>Quý khách có thể mua lại hoặc hủy đơn hàng này.</p>
+            <br>
+            <p>Trân trọng,</p>
+            <p>KoiShop</p>"
                 };
 
                 _emailService.SendMail(emailRequest);
@@ -201,11 +196,12 @@ namespace koi_farm_api.Controllers
             }
         }
 
+
         [HttpPost("create-payment")]
         public IActionResult CreatePayment(RequestPaymentModel response)
         {
             var orderId = response.OrderId;
-            var order = _unitOfWork.OrderRepository.GetById(orderId);
+            var order = _unitOfWork.OrderRepository.Get(o => o.Id == orderId, o => o.Items.Select(i => i.ConsignmentItem)).FirstOrDefault();
 
             if (order == null)
             {
@@ -216,7 +212,10 @@ namespace koi_farm_api.Controllers
                 });
             }
 
-            if (!string.IsNullOrEmpty(order.ConsignmentId))
+            // Determine the status based on ConsignmentItem association
+            var hasConsignmentItem = order.Items.Any(item => item.ConsignmentItem != null);
+
+            if (hasConsignmentItem)
             {
                 order.Status = "Completed";
             }
@@ -224,18 +223,40 @@ namespace koi_farm_api.Controllers
             var payment = new Payment
             {
                 Amount = order.Total,
-                Status = (!string.IsNullOrEmpty(order.ConsignmentId)) ? "SuccessConsignmentCOD" : "SuccessCOD",
+                Status = hasConsignmentItem ? "SuccessConsignmentCOD" : "SuccessCOD",
                 Method = "Cash on Delivery",
                 OrderId = order.Id
             };
-            _unitOfWork.PaymentRepository.Create(payment);
+
+            try
+            {
+                _unitOfWork.PaymentRepository.Create(payment);
+                _unitOfWork.OrderRepository.Update(order);
+                _unitOfWork.SaveChange();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ResponseModel
+                {
+                    StatusCode = 500,
+                    MessageError = $"An error occurred while processing the payment: {ex.Message}"
+                });
+            }
+
             return Ok(new ResponseModel
             {
                 StatusCode = 200,
-                Data = payment
+                Data = new
+                {
+                    PaymentId = payment.Id,
+                    Amount = payment.Amount,
+                    Status = payment.Status,
+                    OrderId = payment.OrderId,
+                    Method = payment.Method
+                }
             });
-
         }
+
 
         [HttpGet("get-all-payments")]
         public IActionResult GetAllPayments()
