@@ -47,9 +47,9 @@ namespace koi_farm_api.Controllers
             {
                 ConsignmentId = consignment.Id,
                 UserId = consignment.UserId,
-                ContractDate = consignment.CreatedTime,
                 Items = consignment.Items.Select(item => new
                 {
+                    ContractDate = item.CreatedTime,
                     ConsignmentItemId = item.Id,
                     ConsignmentItemType = item.ProductItem?.ProductItemType?.ToString() ?? "Unknown",
                     ConsignmentItemStatus = item.Status
