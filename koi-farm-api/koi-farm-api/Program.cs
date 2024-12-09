@@ -23,10 +23,16 @@ builder.Services.AddControllers();
 builder.Services.AddControllers().AddJsonOptions(x =>
     x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
+// Add Directory Browser
 builder.Services.AddDirectoryBrowser();
 
+// Add HTTP Context Accessor
 builder.Services.AddHttpContextAccessor();
 
+// Register Memory Cache
+builder.Services.AddMemoryCache();
+
+// Add Swagger for API documentation
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -58,7 +64,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Add Cors
+// Add CORS Policy
 builder.Services.AddCors(opts =>
 {
     opts.AddPolicy("corspolicy", build =>
@@ -67,22 +73,27 @@ builder.Services.AddCors(opts =>
     });
 });
 
-// DB SQL Server
+// Configure DB Context for SQL Server
 builder.Services.AddDbContext<KoiFarmDbContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("KoiFarm"));
 });
 
-// AutoMapper
+// Add AutoMapper
 builder.Services.AddAutoMapper(typeof(MappingProfiles));
 
-// Register AuthService, UnitOfWork, and GenerateToken for Dependency Injection
+// Register Custom Services
 builder.Services.AddScoped<UnitOfWork>();
 builder.Services.AddScoped<GenerateToken>();
+builder.Services.AddScoped<IVnPayService, VnPayService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddSingleton<ITokenService, TokenService>();
 
-//builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-builder.Services.AddMemoryCache();
-// JWT Authentication
+// Configure Email Settings
+IConfiguration configuration = builder.Configuration;
+EmailSettingModel.Instance = configuration.GetSection("EmailSettings").Get<EmailSettingModel>();
+
+// Configure JWT Authentication
 builder.Services.AddAuthentication("Bearer").AddJwtBearer(options =>
 {
     options.SaveToken = true;
@@ -115,15 +126,11 @@ builder.Services.AddAuthentication("Bearer").AddJwtBearer(options =>
         },
         OnMessageReceived = context =>
         {
-            // Check if the token is already prefixed with "Bearer", if not, treat it as a raw token.
             var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Trim();
-
             if (!string.IsNullOrEmpty(token) && !token.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
             {
-                // If it's just the token, assign it directly to the context
                 context.Token = token;
             }
-
             return Task.CompletedTask;
         },
         OnChallenge = context =>
@@ -134,13 +141,8 @@ builder.Services.AddAuthentication("Bearer").AddJwtBearer(options =>
         }
     };
 });
-builder.Services.AddScoped<IVnPayService, VnPayService>();
 
-IConfiguration configuration = builder.Configuration;
-EmailSettingModel.Instance = configuration.GetSection("EmailSettings").Get<EmailSettingModel>();
-builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddSingleton<ITokenService, TokenService>();
-
+// Build the application
 var app = builder.Build();
 
 // Apply pending migrations automatically on startup
@@ -150,6 +152,7 @@ using (var scope = app.Services.CreateScope())
     dbContext.Database.Migrate();
 }
 
+// Add Cross-Origin Headers for Security
 app.Use(async (context, next) =>
 {
     context.Response.Headers.Add("Cross-Origin-Opener-Policy", "same-origin");
@@ -157,16 +160,10 @@ app.Use(async (context, next) =>
     await next();
 });
 
-// Configure the HTTP request pipeline.
-// Enable Swagger for both Development and Production environments
+// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.UseSwagger();
-    //app.UseSwaggerUI(c =>
-    //{
-    //    c.SwaggerEndpoint("/swagger/v1/swagger.json", "KoiFarm API V1");
-    //    c.RoutePrefix = string.Empty;
-    //});
     app.UseSwaggerUI();
 }
 
