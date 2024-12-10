@@ -35,6 +35,11 @@ namespace Repository.Helper
 
             // Manually generate a JwtId as a GUID
             var jwtId = Guid.NewGuid().ToString();
+            var createdConsignmentIds = _unitOfWork.ConsignmentRepository
+                .Get(c => c.UserId == userEntity.Id) // Assuming UserId is the property linking to the user
+                .Select(c => c.Id.ToString())
+                .ToList();
+            bool hasCreatedConsignment = createdConsignmentIds.Any();
 
             var tokenDescription = new SecurityTokenDescriptor
             {
@@ -42,7 +47,9 @@ namespace Repository.Helper
                 {
                     new Claim("UserID", userEntity.Id),
                     new Claim(ClaimTypes.Role, userEntity.Role.Name),
-                    new Claim(JwtRegisteredClaimNames.Jti, jwtId)
+                    new Claim(JwtRegisteredClaimNames.Jti, jwtId),
+                    new Claim("CreatedConsignmentIds", string.Join(",", createdConsignmentIds)), 
+                    new Claim("HasCreatedConsignment", hasCreatedConsignment.ToString()) 
                 }),
                 IssuedAt = DateTime.Now,
                 Expires = DateTime.Now.AddDays(Convert.ToInt32(_configuration["JWT:TokenExpirationInDays"] ?? "1")),

@@ -200,12 +200,22 @@ namespace koi_farm_api.Controllers
 
             // Extract UserID from token claims
             var userId = HttpContext.User.FindFirst("UserID")?.Value;
+            var hasCreatedConsignmentClaim = HttpContext.User.FindFirst("HasCreatedConsignment")?.Value;
+
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized(new ResponseModel
                 {
                     StatusCode = 401,
                     MessageError = "Unauthorized: UserID is missing from token."
+                });
+            }
+            if (bool.TryParse(hasCreatedConsignmentClaim, out bool hasCreatedConsignment) && hasCreatedConsignment)
+            {
+                return BadRequest(new ResponseModel
+                {
+                    StatusCode = 400,
+                    MessageError = "You cannot purchase items from a consignment you created."
                 });
             }
 
@@ -317,7 +327,6 @@ namespace koi_farm_api.Controllers
                 Data = response
             });
         }
-
 
 
 
