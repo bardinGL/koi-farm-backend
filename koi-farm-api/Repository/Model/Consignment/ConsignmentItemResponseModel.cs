@@ -4,6 +4,7 @@ namespace Repository.Model.Consignment
 {
     public class ConsignmentItemResponseModel
     {
+        public string UserId { get; set; }
         public string ItemsId { get; set; }
         public string Name { get; set; }
         public string Category { get; set; }
