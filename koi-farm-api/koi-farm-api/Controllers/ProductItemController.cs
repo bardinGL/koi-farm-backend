@@ -8,6 +8,7 @@ using Repository.Model.ProductItem;
 using Repository.Model.Review;
 using Repository.Repository;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using Repository.Data.Entity.Enum;
 
 namespace koi_farm_api.Controllers
@@ -114,7 +115,8 @@ namespace koi_farm_api.Controllers
             }
 
             var productItem = _unitOfWork.ProductItemRepository.Get(c => c.Id == id && c.BatchId == null && c.ProductItemType != Repository.Data.Entity.Enum.ProductItemTypeEnum.Healthcare).FirstOrDefault();
-
+            var consignmentItem = _unitOfWork.ConsignmentItemRepository.Get(c => c.ProductItemId == productItem.Id)
+                .Include(c => c.Consignment).FirstOrDefault();
             if (productItem == null || productItem.Name.StartsWith("Shop"))
             {
                 return NotFound(new ResponseModel
@@ -125,7 +127,7 @@ namespace koi_farm_api.Controllers
             }
 
             var responseProductItem = _mapper.Map<ResponseProductItemModel>(productItem);
-
+            responseProductItem.UserId = consignmentItem.Consignment.UserId;
             return Ok(new ResponseModel
             {
                 StatusCode = 200,

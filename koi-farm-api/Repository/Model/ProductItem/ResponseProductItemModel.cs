@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ namespace Repository.Model.ProductItem
 {
     public class ResponseProductItemModel
     {
+        public string UserId { get; set; }
         public string Id { get; set; }
         public string Name { get; set; }
         public decimal Price { get; set; }

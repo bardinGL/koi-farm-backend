@@ -136,15 +136,17 @@ namespace koi_farm_api.Controllers
             _unitOfWork.SaveChange();
             var token = Guid.NewGuid();
             var frontendUrl = _configuration["FrontEndPort:PaymentUrl"];
-            
+
 
             // Send reset email
             var resetUrl = $"https://localhost:44365/api/Auth/verify-email/token={token}";
+            var buttonHtml = $"<a href='{resetUrl}' style='display: inline-block; padding: 10px 20px; font-size: 16px; color: white; background-color: #007bff; text-decoration: none; border-radius: 5px;'>Verify Email</a>";
+
             _emailService.SendMail(new SendMailModel
             {
                 ReceiveAddress = signUpModel.Email,
                 Title = "Email Sign Up Success",
-                Content = $"Click the link to verify your password: {resetUrl}"
+                Content = $"<p>Click the button below to verify your email:</p>{buttonHtml}"
             });
             string cachekey = token.ToString();
             string cachevalue = signUpModel.Email;
