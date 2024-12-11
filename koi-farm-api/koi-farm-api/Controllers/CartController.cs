@@ -7,6 +7,7 @@ using Repository.Repository;
 using Repository.Data.Entity;
 using System.Linq;
 using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 
 namespace koi_farm_api.Controllers
 {
@@ -42,7 +43,8 @@ namespace koi_farm_api.Controllers
             }
 
             var productItem = _unitOfWork.ProductItemRepository.GetById(requestModel.ProductItemId);
-
+            var consignmentItem = _unitOfWork.ConsignmentItemRepository.Get(c => c.ProductItemId == productItem.Id)
+                .Include(c => c.Consignment).FirstOrDefault();
             if (productItem == null)
             {
                 return NotFound(new ResponseModel
@@ -62,6 +64,14 @@ namespace koi_farm_api.Controllers
             }
 
             var cartItem = cart.Items.FirstOrDefault(ci => ci.ProductItemId == requestModel.ProductItemId);
+            if (requestModel.userid == consignmentItem.Consignment.UserId)
+            {
+                return BadRequest(new ResponseModel
+                {
+                    StatusCode = StatusCodes.Status400BadRequest,
+                    MessageError = " You Cannot Buy Your Consignment"
+                });
+            }
             if (cartItem != null)
             {
                 cartItem.Quantity += requestModel.Quantity;

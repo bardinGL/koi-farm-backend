@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\SWP391\\SWP\\koi-farm-backend\\koi-farm-api\\Repository\\Repository.csproj": {}
+    "C:\\SWP391\\SWP391new\\koi-farm-backend\\koi-farm-api\\Repository\\Repository.csproj": {}
   },
   "projects": {
-    "C:\\SWP391\\SWP\\koi-farm-backend\\koi-farm-api\\Repository\\Repository.csproj": {
+    "C:\\SWP391\\SWP391new\\koi-farm-backend\\koi-farm-api\\Repository\\Repository.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\SWP391\\SWP\\koi-farm-backend\\koi-farm-api\\Repository\\Repository.csproj",
+        "projectUniqueName": "C:\\SWP391\\SWP391new\\koi-farm-backend\\koi-farm-api\\Repository\\Repository.csproj",
         "projectName": "Repository",
-        "projectPath": "C:\\SWP391\\SWP\\koi-farm-backend\\koi-farm-api\\Repository\\Repository.csproj",
+        "projectPath": "C:\\SWP391\\SWP391new\\koi-farm-backend\\koi-farm-api\\Repository\\Repository.csproj",
         "packagesPath": "C:\\Users\\dell\\.nuget\\packages\\",
-        "outputPath": "C:\\SWP391\\SWP\\koi-farm-backend\\koi-farm-api\\Repository\\obj\\",
+        "outputPath": "C:\\SWP391\\SWP391new\\koi-farm-backend\\koi-farm-api\\Repository\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

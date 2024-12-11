@@ -139,7 +139,7 @@ namespace koi_farm_api.Controllers
 
 
             // Send reset email
-            var resetUrl = $"https://localhost:44365/api/Auth/verify-email/token={token}";
+            var resetUrl = $"https://wearefpters.xyz/api/Auth/verify-email/token={token}";
             var buttonHtml = $"<a href='{resetUrl}' style='display: inline-block; padding: 10px 20px; font-size: 16px; color: white; background-color: #007bff; text-decoration: none; border-radius: 5px;'>Verify Email</a>";
 
             _emailService.SendMail(new SendMailModel

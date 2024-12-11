@@ -8,6 +8,7 @@ namespace Repository.Model.Cart
 {
     public class CartRequestModel
     {
+        public string userid { get; set; }
         public int Quantity { get; set; }
         public string ProductItemId { get; set; }
     }

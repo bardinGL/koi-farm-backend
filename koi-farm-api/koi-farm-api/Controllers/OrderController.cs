@@ -221,6 +221,7 @@ namespace koi_farm_api.Controllers
                     _unitOfWork.ProductItemRepository.Update(productItem);
                 }
 
+
                 // Reduce Product quantity
                 var product = _unitOfWork.CategoryRepository.GetById(productItem.CategoryId);
                 if (product != null)
@@ -261,7 +262,7 @@ namespace koi_farm_api.Controllers
             }
 
             _unitOfWork.CartRepository.Delete(cart);
-
+            
             try
             {
                 _unitOfWork.SaveChange();
