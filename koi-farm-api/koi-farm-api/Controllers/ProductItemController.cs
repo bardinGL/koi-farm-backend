@@ -127,7 +127,10 @@ namespace koi_farm_api.Controllers
             }
 
             var responseProductItem = _mapper.Map<ResponseProductItemModel>(productItem);
-            responseProductItem.UserId = consignmentItem.Consignment.UserId;
+            if(consignmentItem != null)
+            {
+                responseProductItem.UserId = consignmentItem.Consignment.UserId;
+            }
             return Ok(new ResponseModel
             {
                 StatusCode = 200,
