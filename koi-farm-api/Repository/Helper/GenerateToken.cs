@@ -48,8 +48,7 @@ namespace Repository.Helper
                     new Claim("UserID", userEntity.Id),
                     new Claim(ClaimTypes.Role, userEntity.Role.Name),
                     new Claim(JwtRegisteredClaimNames.Jti, jwtId),
-                    new Claim("CreatedConsignmentIds", string.Join(",", createdConsignmentIds)), 
-                    new Claim("HasCreatedConsignment", hasCreatedConsignment.ToString()) 
+                  
                 }),
                 IssuedAt = DateTime.Now,
                 Expires = DateTime.Now.AddDays(Convert.ToInt32(_configuration["JWT:TokenExpirationInDays"] ?? "1")),

@@ -162,6 +162,76 @@ namespace koi_farm_api.Controllers
                 Data = response
             });
         }
+        [HttpGet("get-consignment-by-id/{consignmentItemId}")]
+        public IActionResult GetConsignmentById(string consignmentItemId)
+        {
+            // Extract UserID from token claims
+            var userId = HttpContext.User.FindFirst("UserID")?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new ResponseModel
+                {
+                    StatusCode = StatusCodes.Status401Unauthorized,
+                    MessageError = "Unauthorized: UserID is missing from token."
+                });
+            }
+
+            // Fetch consignment item by ID, including related ProductItem and Consignment
+            var consignmentItem = _unitOfWork.ConsignmentItemRepository
+                .Get(
+                    ci => ci.Id == consignmentItemId && ci.Consignment.UserId == userId,
+                    ci => ci.ProductItem,
+                    ci => ci.Consignment
+              
+                    
+                )
+                .FirstOrDefault();
+
+            // Check if consignment item is not found
+            if (consignmentItem == null)
+            {
+                return NotFound(new ResponseModel
+                {
+                    StatusCode = StatusCodes.Status404NotFound,
+                    MessageError = "Consignment item not found."
+                });
+            }
+           
+            // Format the response
+            var response = new
+            {
+                ConsignmentItemId = consignmentItem.Id,
+                UserId = consignmentItem.Consignment.UserId,
+           
+                ProductItem = new
+                {
+                    ProductItemId = consignmentItem.ProductItem.Id,
+                    Name = consignmentItem.ProductItem.Name,
+                    Price = consignmentItem.ProductItem.Price,
+                    Origin = consignmentItem.ProductItem.Origin,
+                    Sex = consignmentItem.ProductItem.Sex,
+                    Age = consignmentItem.ProductItem.Age,
+                    Size = consignmentItem.ProductItem.Size,
+                    Species = consignmentItem.ProductItem.Species,
+                    Personality = consignmentItem.ProductItem.Personality,
+                    FoodAmount = consignmentItem.ProductItem.FoodAmount,
+                    WaterTemp = consignmentItem.ProductItem.WaterTemp,
+                    MineralContent = consignmentItem.ProductItem.MineralContent,
+                    PH = consignmentItem.ProductItem.PH,
+                    ImageUrl = consignmentItem.ProductItem.ImageUrl,
+                    Quantity = consignmentItem.ProductItem.Quantity,
+                    Type = consignmentItem.ProductItem.Type,
+                    CategoryId = consignmentItem.ProductItem.CategoryId,
+                    
+                }
+            };
+
+            return Ok(new ResponseModel
+            {
+                StatusCode = StatusCodes.Status200OK,
+                Data = response
+            });
+        }
 
 
 
@@ -200,7 +270,7 @@ namespace koi_farm_api.Controllers
 
             // Extract UserID from token claims
             var userId = HttpContext.User.FindFirst("UserID")?.Value;
-            var hasCreatedConsignmentClaim = HttpContext.User.FindFirst("HasCreatedConsignment")?.Value;
+           
 
             if (string.IsNullOrEmpty(userId))
             {
@@ -210,14 +280,7 @@ namespace koi_farm_api.Controllers
                     MessageError = "Unauthorized: UserID is missing from token."
                 });
             }
-            if (bool.TryParse(hasCreatedConsignmentClaim, out bool hasCreatedConsignment) && hasCreatedConsignment)
-            {
-                return BadRequest(new ResponseModel
-                {
-                    StatusCode = 400,
-                    MessageError = "You cannot purchase items from a consignment you created."
-                });
-            }
+           
 
             // Check if user exists
             var user = _unitOfWork.UserRepository.GetById(userId);
